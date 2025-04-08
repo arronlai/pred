@@ -9,8 +9,8 @@
     <view class="shooting-star" style="--delay: 3"></view>
     
     <view class="header">
-      <text class="title">玄学预测</text>
-      <text class="subtitle">✨ 探索命运的奥秘 ✨</text>
+      <text class="title">{{ title }}</text>
+      <text class="subtitle">✨ 抛出硬币的时候，希望你找到答案 ✨</text>
     </view>
     
     <view class="input-section">
@@ -66,11 +66,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const numbers = ref(['', '', ''])
 const prediction = ref('')
 const isLoading = ref(false)
+const title = ref('')
+
+// 随机选择标题
+const titles = ['昭', '晓', '明', '澈', '豁', '朗']
+const getRandomTitle = () => {
+  const randomIndex = Math.floor(Math.random() * titles.length)
+  title.value = titles[randomIndex]
+}
+
+// 页面加载时随机选择标题
+onMounted(() => {
+  getRandomTitle()
+})
 
 const getPrediction = async () => {
   // 验证输入
@@ -84,26 +97,63 @@ const getPrediction = async () => {
 
   isLoading.value = true
   try {
-    // 这里可以接入实际的AI API
-    // 目前使用模拟数据
-    const responses = [
-      '根据数字能量显示，近期会有贵人相助，把握机会主动出击，成功在望。建议：保持开放心态，积极社交。',
-      '数字组合暗示近期需要谨慎行事，三思而后行。建议：做事前多做准备，避免冲动决策。',
-      '能量显示近期运势上升，可以大胆尝试新事物。建议：勇于创新，突破自我。',
-      '数字预示近期需要沉淀与积累，静待花开。建议：专注自我提升，耐心等待机会。',
-      '玄学预测显示近期会有意外收获，保持警觉。建议：留意身边细节，把握偶然机遇。',
-      '数字组合展示近期人际关系将有突破。建议：多参与社交活动，拓展人脉圈。',
-      '能量预示工作事业有新的机遇。建议：做好准备，展现最佳状态。'
-    ]
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    const day = now.getDate()
+    const hour = now.getHours()
+    const minute = now.getMinutes()
+    const timeStr = `${year}年${month}月${day}日 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
     
-    // 模拟API调用延迟
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // 根据输入数字生成预测结果
-    const sum = numbers.value.reduce((a, b) => Number(a) + Number(b), 0)
-    prediction.value = responses[sum % responses.length]
+    const response = await uni.request({
+      url: 'https://aiproxy.hzh.sealos.run/v1/chat/completions',
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer sk-QiHOEptpQQzgbm7p0a5bDfAeE95d4d4697901eB9245622F0'
+      },
+      data: {
+        model: "deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: `你是一位精通易经和数字命理的智者。请根据用户提供的三个数字（1-100之间）和当前时间（${timeStr}）进行解读。
+
+回答格式要求：
+1. 首先给出预测结果（2-3句话）
+2. 然后列出3-5条具体可行的建议
+3. 最后解释分析过程，包括：
+   - 结合当前年月日时，分析数字在不同时间段的能量变化
+   - 运用易经的阴阳五行理论，解读数字的卦象含义
+   - 分析事情发展趋势、人际关系变化、事业发展方向、个人成长机遇等
+
+解读要求：
+1. 结合当前年月日时，分析数字在不同时间段的能量变化
+2. 运用易经的阴阳五行理论，解读数字的卦象含义
+3. 分析范围包括但不限于：
+   - 事情发展趋势
+   - 人际关系变化
+   - 事业发展方向
+   - 个人成长机遇
+4. 语言要温和积极，避免消极暗示
+5. 建议要具体可行，便于执行`
+          },
+          {
+            role: "user",
+            content: `请根据这三个数字 ${numbers.value.join(', ')} 和当前时间 ${timeStr} 进行分析，并给出建议。`
+          }
+        ]
+      }
+    })
+
+    if (response.statusCode === 200 && response.data.choices && response.data.choices[0]) {
+      prediction.value = response.data.choices[0].message.content
+    } else {
+      throw new Error('API 响应格式错误')
+    }
     
   } catch (error) {
+    console.error('预测失败:', error)
     uni.showToast({
       title: '预测失败，请稍后重试',
       icon: 'none'
@@ -127,61 +177,64 @@ const getPrediction = async () => {
 }
 
 .input-section {
-  width: 80%;
-  max-width: 400px;
-  background: rgba(255,255,255,0.05);
+  width: 280px;
+  margin-bottom: 30px;
+  background: rgba(255,255,255,0.1);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 30px;
+  border-radius: 16px;
+  padding: 20px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
   animation: slideUp 0.8s ease-out;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  margin-bottom: 30px;
+  gap: 20px;
+  margin-bottom: 25px;
   align-items: center;
 }
 
 .input-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   position: relative;
-  width: 200px;
+  width: 100%;
 }
 
 .input-label {
-  font-size: 15px;
+  font-size: 14px;
   color: rgba(255,255,255,0.9);
   padding-left: 4px;
   letter-spacing: 1px;
 }
 
 .number-input {
-  height: 55px;
-  background: rgba(255,255,255,0.1);
+  height: 42px;
+  background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 12px;
+  border-radius: 10px;
   text-align: center;
-  font-size: 24px;
+  font-size: 16px;
   color: #fff;
   transition: all 0.3s ease;
   position: relative;
   z-index: 1;
   backdrop-filter: blur(5px);
+  letter-spacing: 1px;
 }
 
 .number-input::placeholder {
   color: rgba(255,255,255,0.5);
+  font-size: 14px;
 }
 
 .number-input:focus {
-  background: rgba(255,255,255,0.15);
-  border-color: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.12);
+  border-color: #4a90e2;
+  box-shadow: 0 0 15px rgba(74,144,226,0.3);
+  outline: none;
 }
 
 .input-border {
@@ -200,12 +253,12 @@ const getPrediction = async () => {
 }
 
 .predict-btn {
-  width: 200px;
-  height: 55px;
+  width: 280px;
+  height: 42px;
   background: linear-gradient(45deg, #1a237e, #3949ab);
   border: none;
-  border-radius: 28px;
-  font-size: 18px;
+  border-radius: 21px;
+  font-size: 16px;
   color: white;
   font-weight: bold;
   letter-spacing: 1px;
@@ -230,7 +283,7 @@ const getPrediction = async () => {
 }
 
 .predict-btn:active {
-  transform: scale(0.98);
+  transform: translateY(2px);
   box-shadow: 0 2px 8px rgba(26,35,126,0.4);
 }
 
