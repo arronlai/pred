@@ -9,7 +9,7 @@
     <view class="shooting-star" style="--delay: 3"></view>
     
     <view class="header">
-      <text class="title">{{ title }}</text>
+      <text class="title">答案之数</text>
       <text class="subtitle">✨ 抛出硬币的时候，希望你找到答案 ✨</text>
     </view>
     
@@ -53,6 +53,11 @@
         <text class="predict-btn-text">{{ isLoading ? '正在推算...' : '开始预测' }}</text>
         <view class="btn-glow"></view>
       </button>
+      
+      <!-- 添加测试按钮 -->
+      <button @click="testWithMockData" class="test-btn">
+        <text class="test-btn-text">测试UI</text>
+      </button>
     </view>
     
     <view v-if="prediction" class="prediction-section">
@@ -71,19 +76,24 @@ import { ref, onMounted } from 'vue'
 const numbers = ref(['', '', ''])
 const prediction = ref('')
 const isLoading = ref(false)
-const title = ref('')
 
-// 随机选择标题
-const titles = ['昭', '晓', '明', '澈', '豁', '朗']
-const getRandomTitle = () => {
-  const randomIndex = Math.floor(Math.random() * titles.length)
-  title.value = titles[randomIndex]
-}
-
-// 页面加载时随机选择标题
+// 页面加载时不需要随机选择标题
 onMounted(() => {
-  getRandomTitle()
+  // 不再需要随机选择标题
 })
+
+// 添加测试函数
+const testWithMockData = () => {
+  const mockData = {
+    code: 0,
+    content: "### 预测结果\n当前时间2025年4月9日18:12，数字4、5、6的组合显示你正处于一个充满变化和机遇的时期。近期你可能会遇到一些挑战，但同时也将迎来新的成长机会。保持开放的心态，灵活应对变化，将有助于你顺利度过这一阶段。\n\n### 具体建议\n1. **灵活应对变化**：近期可能会有一些突发情况，保持灵活的心态，及时调整计划，将有助于你更好地应对挑战。\n2. **加强沟通**：在人际关系中，多与他人沟通，尤其是与家人和同事，避免误解和冲突。\n3. **抓住学习机会**：这是一个适合学习和提升自我的时期，可以考虑参加一些培训或课程，提升自己的技能。\n4. **注意健康**：在忙碌的同时，不要忽视身体健康，合理安排作息，保持良好的生活习惯。\n\n### 分析过程\n1. **结合当前年月日时，分析数字在不同时间段的能量变化**：\n   - 2025年4月9日18:12，属于乙巳年，辰月，己亥日，酉时。乙木生巳火，辰土生己土，亥水克酉金，整体能量较为平衡，但存在一定的冲突和变化。\n   - 数字4代表稳定和基础，5代表变化和自由，6代表和谐和平衡。在当前时间背景下，数字4的能量受到挑战，5和6的能量则较为活跃，预示着近期可能会有一些变化和调整。\n\n2. **运用易经的阴阳五行理论，解读数字的卦象含义**：\n   - 数字4对应震卦，象征雷，代表行动和变动。数字5对应巽卦，象征风，代表灵活和变化。数字6对应坎卦，象征水，代表智慧和流动。\n   - 震卦与巽卦结合，预示着近期可能会有一些突发的变化和挑战，需要灵活应对。坎卦的出现则提示你，在处理问题时需要运用智慧和策略，保持冷静和理性。\n\n3. **分析事情发展趋势、人际关系变化、事业发展方向、个人成长机遇**：\n   - **近期事情发展趋势**：整体趋势是变化和调整，可能会遇到一些突发情况，但同时也将迎来新的机遇。\n   - **人际关系或家庭变化**：在人际关系中，多与他人沟通，避免误解和冲突。家庭方面，可能会有一些小的变动，但整体和谐。\n   - **事业发展方向**：事业上可能会有一些新的机会，但也需要面对一些挑战。保持灵活的心态，及时调整计划，将有助于你抓住机遇。\n   - **个人成长机遇**：这是一个适合学习和提升自我的时期，可以考虑参加一些培训或课程，提升自己的技能。\n\n通过以上分析，可以看出当前时间背景下，数字4、5、6的组合预示着变化和机遇并存。保持开放的心态，灵活应对变化，将有助于你顺利度过这一阶段，并抓住新的成长机会。"
+  }
+  
+  // 跳转到结果页面
+  uni.navigateTo({
+    url: `/pages/result/result?prediction=${encodeURIComponent(mockData.content)}`
+  })
+}
 
 const getPrediction = async () => {
   // 验证输入
@@ -227,7 +237,7 @@ const getPrediction = async () => {
 .predict-btn {
   width: 280px;
   height: 42px;
-  background: linear-gradient(45deg, #1a237e, #3949ab);
+  background: linear-gradient(45deg, #0066cc, #00a3ff);
   border: none;
   border-radius: 21px;
   font-size: 16px;
@@ -239,7 +249,7 @@ const getPrediction = async () => {
   transition: all 0.3s ease;
   margin: 0 auto;
   display: block;
-  box-shadow: 0 4px 15px rgba(26,35,126,0.4);
+  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.4);
 }
 
 .btn-glow {
@@ -256,7 +266,7 @@ const getPrediction = async () => {
 
 .predict-btn:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 8px rgba(26,35,126,0.4);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.4);
 }
 
 .predict-btn:active .btn-glow {
@@ -273,9 +283,9 @@ const getPrediction = async () => {
 }
 
 @keyframes glowPulse {
-  0% { box-shadow: 0 0 5px rgba(26,35,126,0.5), 0 0 10px rgba(57,73,171,0.5); }
-  50% { box-shadow: 0 0 20px rgba(26,35,126,0.8), 0 0 30px rgba(57,73,171,0.8); }
-  100% { box-shadow: 0 0 5px rgba(26,35,126,0.5), 0 0 10px rgba(57,73,171,0.5); }
+  0% { box-shadow: 0 0 5px rgba(0, 163, 255, 0.5), 0 0 10px rgba(0, 102, 204, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(0, 163, 255, 0.8), 0 0 30px rgba(0, 102, 204, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(0, 163, 255, 0.5), 0 0 10px rgba(0, 102, 204, 0.5); }
 }
 
 .stars {
@@ -474,5 +484,33 @@ const getPrediction = async () => {
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.test-btn {
+  width: 280px;
+  height: 42px;
+  background: linear-gradient(45deg, #00a3ff, #00ff88);
+  border: none;
+  border-radius: 21px;
+  font-size: 16px;
+  color: white;
+  font-weight: bold;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin: 15px auto 0;
+  display: block;
+  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.4);
+}
+
+.test-btn-text {
+  position: relative;
+  z-index: 1;
+}
+
+.test-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.4);
 }
 </style>
