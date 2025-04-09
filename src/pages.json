@@ -3,14 +3,20 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": "数字预测"
+			}
+		},
+		{
+			"path": "pages/result/result",
+			"style": {
+				"navigationBarTitleText": "预测结果"
 			}
 		}
 	],
 	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "数字预测",
+		"navigationBarBackgroundColor": "#8B5CF6",
+		"backgroundColor": "#F9FAFB"
 	}
 }

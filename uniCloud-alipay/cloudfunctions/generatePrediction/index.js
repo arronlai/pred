@@ -1,8 +1,8 @@
 'use strict';
 
 // 从环境变量获取配置
-const API_KEY = process.env.AI_API_KEY;
-const API_URL = process.env.AI_API_URL;
+const API_KEY = process.env.AI_API_KEY || 'sk-QiHOEptpQQzgbm7p0a5bDfAeE95d4d4697901eB9245622F0';
+const API_URL = process.env.AI_API_URL || 'https://aiproxy.hzh.sealos.run/v1/chat/completions';
 
 // 系统提示词模板
 const SYSTEM_PROMPT = `你是一位精通易经和数字命理的智者。请根据用户提供的三个数字（1-100之间）和当前时间进行解读。
@@ -32,43 +32,47 @@ exports.main = async (event, context) => {
 	try {
 		console.log('开始调用预测API，参数：', { numbers, timeStr });
 		
-		const response = await uniCloud.httpclient.request(
-			'https://aiproxy.hzh.sealos.run/v1/chat/completions',
-			{
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': 'Bearer sk-QiHOEptpQQzgbm7p0a5bDfAeE95d4d4697901eB9245622F0'
-				},
-				data: {
-					model: "deepseek-chat",
-					messages: [
-						{
-							role: "system",
-							content: SYSTEM_PROMPT
-						},
-						{
-							role: "user",
-							content: `请根据这三个数字 ${numbers.join(', ')} 和当前时间 ${timeStr} 进行分析，并给出建议。`
-						}
-					]
-				},
-				timeout: 30000 // 设置超时时间为30秒
-			}
-		);
+		const response = await fetch(API_URL, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${API_KEY}`
+			},
+			body: JSON.stringify({
+				model: "deepseek-chat",
+				messages: [
+					{
+						role: "system",
+						content: SYSTEM_PROMPT
+					},
+					{
+						role: "user",
+						content: `请根据这三个数字 ${numbers.join(', ')} 和当前时间 ${timeStr} 进行分析，并给出建议。`
+					}
+				]
+			})
+		});
 
-		console.log('API响应状态码：', response.status);
-		console.log('API响应头：', response.headers);
-		console.log('API响应数据：', JSON.stringify(response.data, null, 2));
-
-		if (response.data && response.data.choices && response.data.choices[0]) {
-			return {
-				content: response.data.choices[0].message.content
-			};
+		const data = await response.json();
+		
+		// 处理不同格式的响应
+		let predictionContent = '';
+		if (data.choices && data.choices[0] && data.choices[0].message) {
+			predictionContent = data.choices[0].message.content;
+		} else if (data.content) {
+			predictionContent = data.content;
+		} else if (typeof data === 'string') {
+			predictionContent = data;
+		} else if (Buffer.isBuffer(data)) {
+			predictionContent = data.toString('utf-8');
 		} else {
-			console.error('API响应格式错误，完整响应：', JSON.stringify(response.data, null, 2));
-			throw new Error('API 响应格式错误');
+			predictionContent = JSON.stringify(data);
 		}
+
+		return {
+			code: 0,
+			content: predictionContent
+		};
 	} catch (error) {
 		console.error('预测失败，详细错误：', {
 			message: error.message,

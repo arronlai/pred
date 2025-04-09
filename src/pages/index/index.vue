@@ -105,58 +105,30 @@ const getPrediction = async () => {
     const minute = now.getMinutes()
     const timeStr = `${year}年${month}月${day}日 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
     
-    const response = await uni.request({
-      url: 'https://aiproxy.hzh.sealos.run/v1/chat/completions',
-      method: 'POST',
-      header: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer sk-QiHOEptpQQzgbm7p0a5bDfAeE95d4d4697901eB9245622F0'
-      },
+    const { result } = await uniCloud.callFunction({
+      name: 'generatePrediction',
       data: {
-        model: "deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content: `你是一位精通易经和数字命理的智者。请根据用户提供的三个数字（1-100之间）和当前时间（${timeStr}）进行解读。
-
-回答格式要求：
-1. 首先给出预测结果（2-3句话）
-2. 然后列出3-5条具体可行的建议
-3. 最后解释分析过程，包括：
-   - 结合当前年月日时，分析数字在不同时间段的能量变化
-   - 运用易经的阴阳五行理论，解读数字的卦象含义
-   - 分析事情发展趋势、人际关系变化、事业发展方向、个人成长机遇等
-
-解读要求：
-1. 结合当前年月日时，分析数字在不同时间段的能量变化
-2. 运用易经的阴阳五行理论，解读数字的卦象含义
-3. 分析范围包括但不限于：
-   - 事情发展趋势
-   - 人际关系变化
-   - 事业发展方向
-   - 个人成长机遇
-4. 语言要温和积极，避免消极暗示
-5. 建议要具体可行，便于执行`
-          },
-          {
-            role: "user",
-            content: `请根据这三个数字 ${numbers.value.join(', ')} 和当前时间 ${timeStr} 进行分析，并给出建议。`
-          }
-        ]
+        numbers: numbers.value,
+        timeStr
       }
     })
 
-    if (response.statusCode === 200 && response.data.choices && response.data.choices[0]) {
-      prediction.value = response.data.choices[0].message.content
+    if (result && result.content) {
+      // 跳转到结果页面
+      uni.navigateTo({
+        url: `/pages/result/result?prediction=${encodeURIComponent(result.content)}`
+      })
     } else {
-      throw new Error('API 响应格式错误')
+      throw new Error('云函数返回格式错误')
     }
     
   } catch (error) {
     console.error('预测失败:', error)
+    // 显示更详细的错误信息
     uni.showToast({
-      title: '预测失败，请稍后重试',
-      icon: 'none'
+      title: error.message || '网络异常，请重试或联系客服',
+      icon: 'none',
+      duration: 3000
     })
   } finally {
     isLoading.value = false
