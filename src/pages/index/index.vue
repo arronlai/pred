@@ -120,7 +120,6 @@ const getPrediction = async () => {
       data: {
         numbers: numbers.value,
         timeStr,
-        birthday: "1993-04-27"
       }
     })
 
