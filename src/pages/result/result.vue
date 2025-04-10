@@ -35,21 +35,38 @@ const currentPage = ref(0)
 // 将内容分成三部分：预测结果、具体建议、分析过程
 const contentParts = computed(() => {
 	if (!prediction.value) return ['', '', '']
+	const content = prediction.value.trim() // Trim initial content
 	
-	const content = prediction.value
-	
-	// 提取预测结果部分
-	const resultMatch = content.match(/### 预测结果\n([\s\S]*?)(?=### 具体建议|$)/)
-	const resultPart = resultMatch ? resultMatch[1] : ''
-	
-	// 提取具体建议部分
-	const adviceMatch = content.match(/### 具体建议\n([\s\S]*?)(?=### 分析过程|$)/)
-	const advicePart = adviceMatch ? adviceMatch[1] : ''
-	
-	// 提取分析过程部分
-	const analysisMatch = content.match(/### 分析过程\n([\s\S]*?)$/)
-	const analysisPart = analysisMatch ? analysisMatch[1] : ''
-	
+	let resultPart = ''
+	let advicePart = ''
+	let analysisPart = ''
+
+	// 更健壮的正则表达式，兼容 ### 和 ***
+	const resultRegex = /(?:###|\*\*\*)\s*预测结果[:：]?\s*\n([\s\S]*?)(?=(?:###|\*\*\*)\s*(?:具体建议|分析过程)|$)/i
+	const adviceRegex = /(?:###|\*\*\*)\s*具体建议[:：]?\s*\n([\s\S]*?)(?=(?:###|\*\*\*)\s*分析过程|$)/i
+	const analysisRegex = /(?:###|\*\*\*)\s*分析过程[:：]?\s*\n([\s\S]*?)$/i
+
+	const resultMatch = content.match(resultRegex)
+	const adviceMatch = content.match(adviceRegex)
+	const analysisMatch = content.match(analysisRegex)
+
+	if (resultMatch && resultMatch[1]) {
+		resultPart = resultMatch[1].trim()
+	}
+	if (adviceMatch && adviceMatch[1]) {
+		advicePart = adviceMatch[1].trim()
+	}
+	if (analysisMatch && analysisMatch[1]) {
+		analysisPart = analysisMatch[1].trim()
+	}
+
+	// 回退机制
+	if (!resultPart && !advicePart && !analysisPart && content) {
+		console.warn("无法按预期格式分割内容，将所有内容显示为预测结果。");
+		// 尝试移除所有 ### 或 *** 标题头
+		resultPart = content.replace(/(?:###|\*\*\*)\s*[一-龥]+[:：]?\s*\n/gi, ''); 
+	}
+
 	return [resultPart, advicePart, analysisPart]
 })
 
@@ -60,7 +77,7 @@ const totalPages = computed(() => {
 
 // 当前页标题
 const currentTitle = computed(() => {
-	const titles = ['预测结果', '具体建议', '分析过程']
+	const titles = ['预测结果', '行动建议', '分析过程']
 	return titles[currentPage.value]
 })
 
