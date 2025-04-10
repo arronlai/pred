@@ -14,6 +14,7 @@ config/config.local.js
 # 其他敏感文件
 credentials.json
 service-account.json
+**/deepseek-config/config.json
 
 # 依赖
 node_modules/

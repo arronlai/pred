@@ -3,20 +3,18 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "数字预测"
 			}
 		},
 		{
 			"path": "pages/result/result",
 			"style": {
-				"navigationBarTitleText": "预测结果"
 			}
 		}
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "white",
-		"navigationBarTitleText": "数字预测",
-		"navigationBarBackgroundColor": "#8B5CF6",
+		"navigationBarTitleText": "答案之数",
+		"navigationBarBackgroundColor": "#090A0F",
 		"backgroundColor": "#F9FAFB"
 	}
 }

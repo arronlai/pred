@@ -209,13 +209,10 @@ const goBack = () => {
 .nav-btn, .back-btn {
 	width: 95px;
 	height: 40px;
-	background: linear-gradient(45deg, #2979ff, #56ccf2);
-	border: none;
 	border-radius: 40px;
 	color: white;
 	font-size: 14px;
 	font-weight: bold;
-	box-shadow: 0 0 15px rgba(41, 121, 255, 0.6);
 	transition: all 0.3s ease;
 	display: flex;
 	align-items: center;
@@ -223,13 +220,33 @@ const goBack = () => {
 	position: relative;
 }
 
+.nav-btn {
+	background: transparent;
+	border: 1px solid #56ccf2;
+	color: #56ccf2;
+	box-shadow: none;
+}
+
+.back-btn {
+	background: linear-gradient(45deg, #2979ff, #56ccf2);
+	border: none;
+	box-shadow: 0 0 15px rgba(41, 121, 255, 0.6);
+}
+
 .nav-btn[disabled] {
-	background: rgba(100, 100, 100, 0.5);
+	background: transparent;
+	border-color: rgba(100, 100, 100, 0.5);
+	color: rgba(100, 100, 100, 0.5);
 	box-shadow: none;
 	opacity: 0.7;
 }
 
-.nav-btn:active, .back-btn:active {
+.nav-btn:active {
+	background: rgba(86, 204, 242, 0.1);
+	transform: scale(0.95);
+}
+
+.back-btn:active {
 	transform: scale(0.95);
 }
 
