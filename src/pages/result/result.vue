@@ -1,5 +1,7 @@
 <template>
 	<view class="container">
+		<feedback-btn></feedback-btn>
+		
 		<view class="stars"></view>
 		<view class="stars2"></view>
 		<view class="stars3"></view>

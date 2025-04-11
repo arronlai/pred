@@ -67,6 +67,9 @@
       </view>
       <view class="prediction-content">{{ prediction }}</view>
     </view>
+
+    <!-- 添加反馈按钮 -->
+    <feedback-btn></feedback-btn>
   </view>
 </template>
 
