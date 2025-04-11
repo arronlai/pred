@@ -21,6 +21,11 @@
 			</view>
 			
 			<view class="form-item">
+				<text class="label">或授权获取手机号</text>
+				<button open-type="getPhoneNumber" @getphonenumber="getPhoneNumber" class="phone-btn">一键授权手机号</button>
+			</view>
+			
+			<view class="form-item">
 				<text class="label">上传截图</text>
 				<view class="upload-area">
 					<view class="image-list">
@@ -51,16 +56,114 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { checkLogin } from '@/utils/auth.js'
+
+// 页面加载时检查登录状态
+onMounted(() => {
+	checkLogin()
+})
 
 const typeArray = ['问题反馈', '功能建议', '其他']
 const typeIndex = ref(0)
 const content = ref('')
 const contact = ref('')
 const imageList = ref([])
+const phoneNumber = ref('') // 存储解密后的手机号
 
 const bindPickerChange = (e) => {
 	typeIndex.value = e.detail.value
+}
+
+// 获取手机号
+const getPhoneNumber = async (e) => {
+	console.log('手机号获取回调:', e.detail);
+	
+	// 检查授权状态
+	if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+		console.error('获取手机号失败原因:', e.detail.errMsg);
+		uni.showToast({
+			title: '获取手机号失败，请手动填写',
+			icon: 'none'
+		});
+		return;
+	}
+	
+	// 记录加密数据
+	console.log('获取到加密数据:', {
+		encryptedData: e.detail.encryptedData ? '有值' : '无值',
+		iv: e.detail.iv ? '有值' : '无值'
+	});
+	
+	uni.showLoading({
+		title: '获取中...'
+	});
+	
+	try {
+		// 直接使用code换取手机号 (新版微信小程序支持)
+		if (e.detail.code) {
+			console.log('使用code方式获取手机号');
+			const result = await uniCloud.callFunction({
+				name: 'getPhoneNumber',
+				data: {
+					code: e.detail.code
+				}
+			});
+			
+			console.log('云函数返回结果:', result);
+			
+			if (result.result && result.result.code === 0) {
+				const phone = result.result.data.phoneNumber;
+				phoneNumber.value = phone;
+				contact.value = phone;
+				
+				uni.hideLoading();
+				uni.showToast({
+					title: '手机号获取成功',
+					icon: 'success'
+				});
+			} else {
+				throw new Error(result.result?.message || '获取手机号失败');
+			}
+		} 
+		// 使用传统解密方式 (旧版本支持)
+		else if (e.detail.encryptedData && e.detail.iv) {
+			console.log('使用解密方式获取手机号');
+			const result = await uniCloud.callFunction({
+				name: 'decryptPhoneNumber',
+				data: {
+					encryptedData: e.detail.encryptedData,
+					iv: e.detail.iv
+				}
+			});
+			
+			console.log('云函数返回结果:', result);
+			
+			if (result.result && result.result.code === 0) {
+				const phone = result.result.data.phoneNumber;
+				phoneNumber.value = phone;
+				contact.value = phone;
+				
+				uni.hideLoading();
+				uni.showToast({
+					title: '手机号获取成功',
+					icon: 'success'
+				});
+			} else {
+				throw new Error(result.result?.message || '获取手机号失败');
+			}
+		} else {
+			throw new Error('未获取到手机号数据');
+		}
+	} catch (error) {
+		console.error('获取手机号失败详情:', error);
+		uni.hideLoading();
+		uni.showToast({
+			title: error.message || '获取手机号失败，请手动填写',
+			icon: 'none',
+			duration: 2000
+		});
+	}
 }
 
 const chooseImage = () => {
@@ -79,6 +182,9 @@ const deleteImage = (index) => {
 }
 
 const submitFeedback = async () => {
+	// 再次检查登录状态
+	if (!checkLogin()) return
+	
 	if (!content.value) {
 		uni.showToast({
 			title: '请填写反馈内容',
@@ -112,6 +218,7 @@ const submitFeedback = async () => {
 				type: typeArray[typeIndex.value],
 				content: content.value,
 				contact: contact.value,
+				phoneNumber: phoneNumber.value,
 				images: imageUrls,
 				userInfo
 			}
@@ -198,6 +305,18 @@ const submitFeedback = async () => {
 	background-color: #f8f8f8;
 	border-radius: 8px;
 	padding: 0 12px;
+}
+
+.phone-btn {
+	width: 100%;
+	height: 40px;
+	background-color: #f5f5f5;
+	color: #333;
+	border-radius: 8px;
+	font-size: 14px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .upload-area {

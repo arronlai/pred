@@ -75,6 +75,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { checkLogin } from '@/utils/auth.js'
 
 const numbers = ref(['', '', ''])
 const prediction = ref('')
@@ -99,52 +100,55 @@ const testWithMockData = () => {
 }
 
 const getPrediction = async () => {
+  // 检查是否已登录
+  if (!checkLogin()) return;
+  
   // 验证输入
   if (numbers.value.some(num => !num || Number(num) < 1 || Number(num) > 100)) {
     uni.showToast({
       title: '请输入1-100之间的数字',
       icon: 'none'
-    })
-    return
+    });
+    return;
   }
-
-  isLoading.value = true
+  
+  if (!question.value) {
+    uni.showToast({
+      title: '请输入您的问题',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  isLoading.value = true;
+  
   try {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = now.getMonth() + 1
-    const day = now.getDate()
-    const hour = now.getHours()
-    const minute = now.getMinutes()
-    const timeStr = `${year}年${month}月${day}日 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-    
-    const { result } = await uniCloud.callFunction({
+    const result = await uniCloud.callFunction({
       name: 'generatePrediction',
       data: {
-        numbers: numbers.value,
-        timeStr,
+        number: numbers.value.join(','),
+        question: question.value,
+        birthday: birthday.value || ''
       }
-    })
-
-    if (result && result.content) {
-      // 跳转到结果页面
-      uni.navigateTo({
-        url: `/pages/result/result?prediction=${encodeURIComponent(result.content)}`
-      })
-    } else {
-      throw new Error('云函数返回格式错误')
-    }
+    });
     
+    if (result.result && result.result.code === 0) {
+      const prediction = result.result.data;
+      // 跳转到结果页
+      uni.navigateTo({
+        url: `/pages/result/result?prediction=${encodeURIComponent(prediction)}`
+      });
+    } else {
+      throw new Error(result.result?.message || '生成预测失败');
+    }
   } catch (error) {
-    console.error('预测失败:', error)
-    // 显示更详细的错误信息
     uni.showToast({
-      title: error.message || '网络异常，请重试或联系客服',
-      icon: 'none',
-      duration: 3000
-    })
+      title: error.message || '生成预测失败，请重试',
+      icon: 'none'
+    });
+    console.error('生成预测失败：', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 </script>

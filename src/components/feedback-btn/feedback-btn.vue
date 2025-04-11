@@ -6,13 +6,18 @@
 </template>
 
 <script>
+import { checkLogin } from '@/utils/auth.js'
+
 export default {
 	name: 'feedback-btn',
 	methods: {
 		goToFeedback() {
-			uni.navigateTo({
-				url: '/pages/feedback/feedback'
-			})
+			// 检查是否已登录，未登录则跳转到登录页
+			if (checkLogin()) {
+				uni.navigateTo({
+					url: '/pages/feedback/feedback'
+				})
+			}
 		}
 	}
 }

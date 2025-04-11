@@ -1,0 +1,66 @@
+{
+	"bsonType": "object",
+	"required": ["openid"],
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": "doc.openid == auth.openid",
+		"delete": false
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"openid": {
+			"bsonType": "string",
+			"description": "用户唯一标识"
+		},
+		"nickName": {
+			"bsonType": "string",
+			"description": "用户昵称"
+		},
+		"avatarUrl": {
+			"bsonType": "string", 
+			"description": "用户头像"
+		},
+		"gender": {
+			"bsonType": "int",
+			"description": "性别：0-未知，1-男，2-女",
+			"minimum": 0,
+			"maximum": 2
+		},
+		"createTime": {
+			"bsonType": "timestamp",
+			"description": "注册时间"
+		},
+		"lastLoginTime": {
+			"bsonType": "timestamp",
+			"description": "最后登录时间"
+		},
+		"vipLevel": {
+			"bsonType": "int",
+			"description": "会员等级：0-普通用户，1-初级会员，2-高级会员",
+			"minimum": 0,
+			"maximum": 2,
+			"defaultValue": 0
+		},
+		"vipExpireTime": {
+			"bsonType": "timestamp",
+			"description": "会员过期时间"
+		},
+		"totalQueries": {
+			"bsonType": "int", 
+			"description": "累计查询次数",
+			"defaultValue": 0
+		},
+		"todayQueries": {
+			"bsonType": "int",
+			"description": "今日查询次数",
+			"defaultValue": 0
+		},
+		"lastQueryDate": {
+			"bsonType": "string",
+			"description": "最后查询日期，格式YYYY-MM-DD"
+		}
+	}
+} 
