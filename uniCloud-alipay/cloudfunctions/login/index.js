@@ -1,6 +1,15 @@
 'use strict';
 
 const db = uniCloud.database();
+const configCenter = require('uni-config-center')
+const mpConfig = configCenter({
+	pluginId: 'mp-config'
+}).config()
+
+// 检查配置是否存在
+if (!mpConfig || !mpConfig['mp-weixin'] || !mpConfig['mp-weixin'].appid || !mpConfig['mp-weixin'].appsecret) {
+	throw new Error('微信小程序配置缺失，请检查uni-config-center/mp-config/config.json配置')
+}
 
 exports.main = async (event, context) => {
 	const { code, userInfo } = event;
@@ -26,21 +35,34 @@ exports.main = async (event, context) => {
 		try {
 			// 根据不同平台获取用户标识
 			if (context.PLATFORM === 'mp-weixin') {
-				const wxContext = await uniCloud.getWXContext();
-				openid = wxContext.OPENID;
+				// 使用code2session接口获取openid
+				const wxContext = await uniCloud.httpclient.request('https://api.weixin.qq.com/sns/jscode2session', {
+					dataType: 'json',
+					data: {
+						appid: mpConfig['mp-weixin'].appid,
+						secret: mpConfig['mp-weixin'].appsecret,
+						js_code: code,
+						grant_type: 'authorization_code'
+					}
+				});
+				
+				if (wxContext.data && wxContext.data.openid) {
+					openid = wxContext.data.openid;
+				} else {
+					throw new Error('获取openid失败: ' + JSON.stringify(wxContext.data));
+				}
 			} else if (context.PLATFORM === 'mp-alipay') {
 				const alipayContext = await uniCloud.getAlipayContext();
 				openid = alipayContext.OPENID;
 			} else {
-				// 如果无法获取真实openid，则生成一个随机ID作为测试用
-				openid = 'test_' + Date.now() + '_' + Math.random().toString(36).substring(2);
-				console.log('测试环境，使用临时ID:', openid);
+				throw new Error('不支持的平台');
 			}
 		} catch (error) {
 			console.error('获取用户标识失败:', error);
-			// 如果无法获取openid，为了便于测试，生成一个随机ID
-			openid = 'test_' + Date.now() + '_' + Math.random().toString(36).substring(2);
-			console.log('无法获取用户标识，使用临时ID:', openid);
+			return {
+				code: -1,
+				message: '获取用户标识失败: ' + error.message
+			}
 		}
 		
 		if (!openid) {
