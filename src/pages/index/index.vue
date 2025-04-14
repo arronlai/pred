@@ -49,7 +49,7 @@
           <view class="input-border"></view>
         </view>
       </view>
-      <button @click="getPrediction" class="predict-btn" :disabled="isLoading" :class="{'predict-btn-loading': isLoading}">
+      <button @click="handleStartPrediction" class="predict-btn" :disabled="isLoading" :class="{'predict-btn-loading': isLoading}">
         <text class="predict-btn-text">{{ isLoading ? '正在推算...' : '开始预测' }}</text>
         <view class="btn-glow"></view>
       </button>
@@ -74,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onLoad } from 'vue'
 import { checkLogin } from '@/utils/auth.js'
 
 const numbers = ref(['', '', ''])
@@ -85,6 +85,17 @@ const isLoading = ref(false)
 onMounted(() => {
   // 不再需要随机选择标题
 })
+
+onLoad(() => {
+    // 检查用户是否已登录
+    const userInfo = uni.getStorageSync('userInfo');
+    if (!userInfo) {
+        // 未登录，跳转到登录页
+        uni.navigateTo({
+            url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
+        });
+    }
+});
 
 // 添加测试函数
 const testWithMockData = () => {
@@ -98,6 +109,42 @@ const testWithMockData = () => {
     url: `/pages/result/result?prediction=${encodeURIComponent(mockData.content)}`
   })
 }
+
+const handleStartPrediction = async () => {
+    // 检查用户是否已登录
+    const userInfo = uni.getStorageSync('userInfo');
+    if (!userInfo) {
+        // 未登录，跳转到登录页
+        uni.navigateTo({
+            url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
+        });
+        return;
+    }
+
+    // 已登录，继续预测流程
+    if (numbers.value.length < 6) {
+        uni.showToast({
+            title: '请选择6个号码',
+            icon: 'none'
+        });
+        return;
+    }
+
+    // 检查是否已预测过
+    if (prediction.value) {
+        uni.showModal({
+            title: '提示',
+            content: '您已经进行过预测，是否重新预测？',
+            success: (res) => {
+                if (res.confirm) {
+                    getPrediction();
+                }
+            }
+        });
+    } else {
+        getPrediction();
+    }
+};
 
 const getPrediction = async () => {
   // 检查是否已登录
