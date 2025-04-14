@@ -74,8 +74,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onLoad } from 'vue'
+import { ref, onMounted } from 'vue'
 import { checkLogin } from '@/utils/auth.js'
+import { onLoad } from '@dcloudio/uni-app';
 
 const numbers = ref(['', '', ''])
 const prediction = ref('')
@@ -124,7 +125,7 @@ const handleStartPrediction = async () => {
     // 已登录，继续预测流程
     if (numbers.value.length < 6) {
         uni.showToast({
-            title: '请选择6个号码',
+            title: '请在心里想着您的问题，输入3个数字（1-100之间）',
             icon: 'none'
         });
         return;

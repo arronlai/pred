@@ -3,7 +3,7 @@
     <view class="login-card">
       <image class="logo" src="/static/logo.png" mode="aspectFit"></image>
       <view class="title">答案之数</view>
-      <view class="subtitle">探索数字的奥秘</view>
+      <view class="subtitle"></view>
 
       <!-- 使用新的授权方式 -->
       <button class="login-btn" @click="handleGetUserProfile">
@@ -249,6 +249,15 @@ const showPrivacy = () => {
   font-size: 16px;
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 40px;
+}
+
+.logo-wrapper {
+  background-color: #07c160;
+  border-radius: 8px;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  margin-bottom: 20px;
 }
 
 .login-btn {
