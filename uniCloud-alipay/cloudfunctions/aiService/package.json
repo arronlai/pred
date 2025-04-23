@@ -1,0 +1,13 @@
+{
+  "name": "aiService",
+  "version": "1.0.0",
+  "description": "平替云函数",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "uni-config-center": "file:../../../src/uni_modules/uni-config-center/uniCloud/cloudfunctions/common/uni-config-center"
+  },
+  "extensions": {
+    "uni-cloud-jql": {}
+  }
+}

@@ -9,83 +9,87 @@
     <view class="shooting-star" style="--delay: 3"></view>
     
     <view class="header">
-      <text class="title">答案之数</text>
-      <text class="subtitle">✨ 抛出硬币的时候，希望你找到答案 ✨</text>
+      <text class="title">平替好物</text>
+      <text class="subtitle">✨ 帮你找到更实惠的选择 ✨</text>
     </view>
     
     <view class="input-section">
       <view class="input-group">
         <view class="input-wrapper">
-          <text class="input-label">第一个数字</text>
+          <text class="input-label">商品名称或链接</text>
           <input 
-            type="number" 
-            v-model="numbers[0]" 
-            class="number-input"
-            placeholder="1-100"
-            maxlength="3"
-          />
-          <view class="input-border"></view>
-        </view>
-        <view class="input-wrapper">
-          <text class="input-label">第二个数字</text>
-          <input 
-            type="number" 
-            v-model="numbers[1]" 
-            class="number-input"
-            placeholder="1-100"
-            maxlength="3"
-          />
-          <view class="input-border"></view>
-        </view>
-        <view class="input-wrapper">
-          <text class="input-label">第三个数字</text>
-          <input 
-            type="number" 
-            v-model="numbers[2]" 
-            class="number-input"
-            placeholder="1-100"
-            maxlength="3"
+            type="text" 
+            v-model="productInput" 
+            class="product-input"
+            placeholder="请输入商品名称或粘贴商品链接"
           />
           <view class="input-border"></view>
         </view>
       </view>
-      <button @click="handleStartPrediction" class="predict-btn" :disabled="isLoading" :class="{'predict-btn-loading': isLoading}">
-        <text class="predict-btn-text">{{ isLoading ? '正在推算...' : '开始预测' }}</text>
+      <button @click="handleSearch" class="predict-btn" :disabled="isLoading" :class="{'predict-btn-loading': isLoading}">
+        <text class="predict-btn-text">{{ isLoading ? '正在查找...' : '开始查找' }}</text>
         <view class="btn-glow"></view>
-      </button>
-      
-      <!-- 添加测试按钮 -->
-      <button @click="testWithMockData" class="test-btn">
-        <text class="test-btn-text">测试UI</text>
       </button>
     </view>
     
-    <view v-if="prediction" class="prediction-section">
-      <view class="prediction-title">
-        <text class="prediction-icon">🌟</text>
-        <text>预测结果</text>
+    <view v-if="searchResult" class="result-section">
+      <view class="result-title">
+        <text class="result-icon">🔍</text>
+        <text>查找结果</text>
       </view>
-      <view class="prediction-content">{{ prediction }}</view>
+      <view class="result-content">
+        <view class="original-product">
+          <text class="product-title">原商品</text>
+          <view class="product-info">
+            <image :src="searchResult.original.image" mode="aspectFit" class="product-image"></image>
+            <view class="product-details">
+              <text class="product-name">{{ searchResult.original.name }}</text>
+              <text class="product-price">¥{{ searchResult.original.price }}</text>
+            </view>
+          </view>
+        </view>
+        
+        <view class="alternative-products">
+          <text class="product-title">平替推荐</text>
+          <view class="product-list">
+            <view v-for="(product, index) in searchResult.alternatives" :key="index" class="product-item">
+              <image :src="product.image" mode="aspectFit" class="product-image"></image>
+              <view class="product-details">
+                <text class="product-name">{{ product.name }}</text>
+                <text class="product-price">¥{{ product.price }}</text>
+                <text class="product-savings">节省: ¥{{ product.savings }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        
+        <view class="comparison-section">
+          <text class="comparison-title">详细对比</text>
+          <view class="comparison-table">
+            <view class="table-header">
+              <text class="header-item">特性</text>
+              <text class="header-item">原商品</text>
+              <text class="header-item">平替商品</text>
+            </view>
+            <view v-for="(feature, index) in searchResult.comparison" :key="index" class="table-row">
+              <text class="row-item">{{ feature.name }}</text>
+              <text class="row-item">{{ feature.original }}</text>
+              <text class="row-item">{{ feature.alternative }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
     </view>
-
-    <!-- 添加反馈按钮 -->
-    <feedback-btn></feedback-btn>
   </view>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { checkLogin } from '@/utils/auth.js'
 import { onLoad } from '@dcloudio/uni-app';
 
-const numbers = ref(['', '', ''])
-const prediction = ref('')
+const productInput = ref('')
+const searchResult = ref(null)
 const isLoading = ref(false)
-
-// 页面加载时不需要随机选择标题
-onMounted(() => {
-  // 不再需要随机选择标题
-})
 
 onLoad(() => {
     // 检查用户是否已登录
@@ -98,106 +102,46 @@ onLoad(() => {
     }
 });
 
-// 添加测试函数
-const testWithMockData = () => {
-  const mockData = {
-    code: 0,
-    content: "### 预测结果\n当前时间2025年4月9日18:12，数字4、5、6的组合显示你正处于一个充满变化和机遇的时期。近期你可能会遇到一些挑战，但同时也将迎来新的成长机会。保持开放的心态，灵活应对变化，将有助于你顺利度过这一阶段。\n\n### 具体建议\n1. **灵活应对变化**：近期可能会有一些突发情况，保持灵活的心态，及时调整计划，将有助于你更好地应对挑战。\n2. **加强沟通**：在人际关系中，多与他人沟通，尤其是与家人和同事，避免误解和冲突。\n3. **抓住学习机会**：这是一个适合学习和提升自我的时期，可以考虑参加一些培训或课程，提升自己的技能。\n4. **注意健康**：在忙碌的同时，不要忽视身体健康，合理安排作息，保持良好的生活习惯。\n\n### 分析过程\n1. **结合当前年月日时，分析数字在不同时间段的能量变化**：\n   - 2025年4月9日18:12，属于乙巳年，辰月，己亥日，酉时。乙木生巳火，辰土生己土，亥水克酉金，整体能量较为平衡，但存在一定的冲突和变化。\n   - 数字4代表稳定和基础，5代表变化和自由，6代表和谐和平衡。在当前时间背景下，数字4的能量受到挑战，5和6的能量则较为活跃，预示着近期可能会有一些变化和调整。\n\n2. **运用易经的阴阳五行理论，解读数字的卦象含义**：\n   - 数字4对应震卦，象征雷，代表行动和变动。数字5对应巽卦，象征风，代表灵活和变化。数字6对应坎卦，象征水，代表智慧和流动。\n   - 震卦与巽卦结合，预示着近期可能会有一些突发的变化和挑战，需要灵活应对。坎卦的出现则提示你，在处理问题时需要运用智慧和策略，保持冷静和理性。\n\n3. **分析事情发展趋势、人际关系变化、事业发展方向、个人成长机遇**：\n   - **近期事情发展趋势**：整体趋势是变化和调整，可能会遇到一些突发情况，但同时也将迎来新的机遇。\n   - **人际关系或家庭变化**：在人际关系中，多与他人沟通，避免误解和冲突。家庭方面，可能会有一些小的变动，但整体和谐。\n   - **事业发展方向**：事业上可能会有一些新的机会，但也需要面对一些挑战。保持灵活的心态，及时调整计划，将有助于你抓住机遇。\n   - **个人成长机遇**：这是一个适合学习和提升自我的时期，可以考虑参加一些培训或课程，提升自己的技能。\n\n通过以上分析，可以看出当前时间背景下，数字4、5、6的组合预示着变化和机遇并存。保持开放的心态，灵活应对变化，将有助于你顺利度过这一阶段，并抓住新的成长机会。"
-  }
-  
-  // 跳转到结果页面
-  uni.navigateTo({
-    url: `/pages/result/result?prediction=${encodeURIComponent(mockData.content)}`
-  })
-}
-
-const handleStartPrediction = async () => {
+const handleSearch = async () => {
     // 检查用户是否已登录
     const userInfo = uni.getStorageSync('userInfo');
     if (!userInfo) {
-        // 未登录，跳转到登录页
         uni.navigateTo({
             url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
         });
         return;
     }
 
-    // 已登录，继续预测流程
-    if (numbers.value.length < 6) {
+    if (!productInput.value) {
         uni.showToast({
-            title: '请在心里想着您的问题，输入3个数字（1-100之间）',
+            title: '请输入商品名称或链接',
             icon: 'none'
         });
         return;
     }
 
-    // 检查是否已预测过
-    if (prediction.value) {
-        uni.showModal({
-            title: '提示',
-            content: '您已经进行过预测，是否重新预测？',
-            success: (res) => {
-                if (res.confirm) {
-                    getPrediction();
-                }
+    isLoading.value = true;
+    try {
+        const result = await uniCloud.callFunction({
+            name: 'findAlternative',
+            data: {
+                product: productInput.value
             }
         });
-    } else {
-        getPrediction();
+        
+        if (result.result && result.result.code === 0) {
+            searchResult.value = result.result.data;
+        } else {
+            throw new Error(result.result?.message || '查找失败');
+        }
+    } catch (error) {
+        uni.showToast({
+            title: error.message || '查找失败，请重试',
+            icon: 'none'
+        });
+    } finally {
+        isLoading.value = false;
     }
-};
-
-const getPrediction = async () => {
-  // 检查是否已登录
-  if (!checkLogin()) return;
-  
-  // 验证输入
-  if (numbers.value.some(num => !num || Number(num) < 1 || Number(num) > 100)) {
-    uni.showToast({
-      title: '请输入1-100之间的数字',
-      icon: 'none'
-    });
-    return;
-  }
-  
-  if (!question.value) {
-    uni.showToast({
-      title: '请输入您的问题',
-      icon: 'none'
-    });
-    return;
-  }
-  
-  isLoading.value = true;
-  
-  try {
-    const result = await uniCloud.callFunction({
-      name: 'generatePrediction',
-      data: {
-        number: numbers.value.join(','),
-        question: question.value,
-        birthday: birthday.value || ''
-      }
-    });
-    
-    if (result.result && result.result.code === 0) {
-      const prediction = result.result.data;
-      // 跳转到结果页
-      uni.navigateTo({
-        url: `/pages/result/result?prediction=${encodeURIComponent(prediction)}`
-      });
-    } else {
-      throw new Error(result.result?.message || '生成预测失败');
-    }
-  } catch (error) {
-    uni.showToast({
-      title: error.message || '生成预测失败，请重试',
-      icon: 'none'
-    });
-    console.error('生成预测失败：', error);
-  } finally {
-    isLoading.value = false;
-  }
 }
 </script>
 
@@ -247,31 +191,20 @@ const getPrediction = async () => {
   letter-spacing: 1px;
 }
 
-.number-input {
-  height: 42px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 10px;
-  text-align: center;
-  font-size: 16px;
-  color: #fff;
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 1;
-  backdrop-filter: blur(5px);
-  letter-spacing: 1px;
-}
-
-.number-input::placeholder {
-  color: rgba(255,255,255,0.5);
-  font-size: 14px;
-}
-
-.number-input:focus {
-  background: rgba(255,255,255,0.12);
-  border-color: #4a90e2;
-  box-shadow: 0 0 15px rgba(74,144,226,0.3);
-  outline: none;
+.product-input {
+    height: 42px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 0 15px;
+    font-size: 16px;
+    color: #fff;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(5px);
+    letter-spacing: 1px;
+    width: 100%;
 }
 
 .input-border {
@@ -492,9 +425,9 @@ const getPrediction = async () => {
   letter-spacing: 3px;
 }
 
-.prediction-section {
-  width: 80%;
-  max-width: 400px;
+.result-section {
+  width: 90%;
+  max-width: 600px;
   margin-top: 30px;
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(10px);
@@ -505,7 +438,7 @@ const getPrediction = async () => {
   animation: fadeIn 0.8s ease-out;
 }
 
-.prediction-title {
+.result-title {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -513,22 +446,93 @@ const getPrediction = async () => {
   font-weight: bold;
   color: #fff;
   margin-bottom: 20px;
-  text-shadow: 0 0 10px rgba(255,255,255,0.3);
 }
 
-.prediction-icon {
-  font-size: 28px;
-}
-
-.prediction-content {
-  font-size: 17px;
-  line-height: 1.8;
-  color: rgba(255,255,255,0.9);
+.product-info {
+  display: flex;
+  gap: 20px;
+  margin: 20px 0;
   padding: 20px;
   background: rgba(255,255,255,0.05);
   border-radius: 15px;
-  border-left: 4px solid #3949ab;
-  letter-spacing: 0.5px;
+}
+
+.product-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.product-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.product-name {
+  font-size: 16px;
+  color: #fff;
+  font-weight: bold;
+}
+
+.product-price {
+  font-size: 18px;
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.product-savings {
+  font-size: 14px;
+  color: #4caf50;
+}
+
+.comparison-table {
+  margin-top: 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  background: rgba(255,255,255,0.1);
+  padding: 15px;
+}
+
+.table-row {
+  display: flex;
+  padding: 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.header-item, .row-item {
+  flex: 1;
+  text-align: center;
+  color: #fff;
+}
+
+.header-item {
+  font-weight: bold;
+}
+
+.alternative-products {
+  margin-top: 30px;
+}
+
+.product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.product-item {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 15px;
 }
 
 @keyframes fadeIn {
@@ -539,33 +543,5 @@ const getPrediction = async () => {
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.test-btn {
-  width: 280px;
-  height: 42px;
-  background: linear-gradient(45deg, #00a3ff, #00ff88);
-  border: none;
-  border-radius: 21px;
-  font-size: 16px;
-  color: white;
-  font-weight: bold;
-  letter-spacing: 1px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  margin: 15px auto 0;
-  display: block;
-  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.4);
-}
-
-.test-btn-text {
-  position: relative;
-  z-index: 1;
-}
-
-.test-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 8px rgba(0, 163, 255, 0.4);
 }
 </style>
