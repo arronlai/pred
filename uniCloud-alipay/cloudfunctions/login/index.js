@@ -5,10 +5,23 @@ const configCenter = require('uni-config-center')
 const mpConfig = configCenter({
 	pluginId: 'mp-config'
 }).config()
+const crypto = require('crypto');
 
 // 检查配置是否存在
 if (!mpConfig || !mpConfig['mp-weixin'] || !mpConfig['mp-weixin'].appid || !mpConfig['mp-weixin'].appsecret) {
 	throw new Error('微信小程序配置缺失，请检查uni-config-center/mp-config/config.json配置')
+}
+
+// 生成安全的 token
+function generateToken(openid) {
+	const timestamp = Date.now();
+	const randomStr = Math.random().toString(36).substr(2);
+	const content = `${openid}_${timestamp}_${randomStr}`;
+	const token = crypto.createHash('sha256').update(content).digest('hex');
+	return {
+		token,
+		timestamp
+	};
 }
 
 exports.main = async (event, context) => {
@@ -97,8 +110,15 @@ exports.main = async (event, context) => {
 			});
 		}
 		
-		// 生成token（简单实现，实际应用中应该使用更安全的方式）
-		const token = 'token_' + openid + '_' + Date.now();
+		// 生成token
+		const { token, timestamp } = generateToken(openid);
+		
+		// 保存 token 到数据库
+		await db.collection('users').doc(user.data[0]._id).update({
+			token,
+			tokenTimestamp: timestamp,
+			lastLoginTime: Date.now()
+		});
 		
 		return {
 			code: 0,
@@ -109,7 +129,8 @@ exports.main = async (event, context) => {
 					openid: openid,
 					nickName: userInfo?.nickName || '匿名用户',
 					avatarUrl: userInfo?.avatarUrl || '',
-					gender: userInfo?.gender || 0
+					gender: userInfo?.gender || 0,
+					token: token,
 				}
 			}
 		}

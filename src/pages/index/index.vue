@@ -13,6 +13,10 @@
       <text class="subtitle">✨ 抛出硬币的时候，希望你找到答案 ✨</text>
     </view>
     
+    <view class="history-link" @click="goToHistory">
+      <text>查看历史记录</text>
+    </view>
+    
     <view class="input-section">
       <view class="input-group">
         <view class="input-wrapper">
@@ -114,7 +118,9 @@ const testWithMockData = () => {
 const handleStartPrediction = async () => {
     // 检查用户是否已登录
     const userInfo = uni.getStorageSync('userInfo');
-    if (!userInfo) {
+    if (!userInfo || !userInfo.token) {
+        // 清空不完整的用户信息
+        uni.removeStorageSync('userInfo');
         // 未登录，跳转到登录页
         uni.navigateTo({
             url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
@@ -123,7 +129,7 @@ const handleStartPrediction = async () => {
     }
 
     // 已登录，继续预测流程
-    if (numbers.value.length < 6) {
+    if (numbers.value.length < 3) {
         uni.showToast({
             title: '请在心里想着您的问题，输入3个数字（1-100之间）',
             icon: 'none'
@@ -160,10 +166,18 @@ const getPrediction = async () => {
     return;
   }
   
-  if (!question.value) {
+  // 获取用户信息
+  const userInfo = uni.getStorageSync('userInfo');
+  if (!userInfo || !userInfo.token) {
+    // 清空不完整的用户信息
+    uni.removeStorageSync('userInfo');
     uni.showToast({
-      title: '请输入您的问题',
+      title: '用户信息不完整，请重新登录',
       icon: 'none'
+    });
+    // 跳转到登录页
+    uni.navigateTo({
+      url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
     });
     return;
   }
@@ -175,8 +189,7 @@ const getPrediction = async () => {
       name: 'generatePrediction',
       data: {
         number: numbers.value.join(','),
-        question: question.value,
-        birthday: birthday.value || ''
+        token: userInfo.token
       }
     });
     
@@ -199,6 +212,28 @@ const getPrediction = async () => {
     isLoading.value = false;
   }
 }
+
+const goToHistory = () => {
+  // 获取用户信息
+  const userInfo = uni.getStorageSync('userInfo');
+  if (!userInfo || !userInfo.token) {
+    // 清空不完整的用户信息
+    uni.removeStorageSync('userInfo');
+    uni.showToast({
+      title: '用户信息不完整，请重新登录',
+      icon: 'none'
+    });
+    // 跳转到登录页
+    uni.navigateTo({
+      url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
+    });
+    return;
+  }
+  
+  uni.navigateTo({
+    url: '/pages/history/history'
+  });
+};
 </script>
 
 <style>
@@ -567,5 +602,12 @@ const getPrediction = async () => {
 .test-btn:active {
   transform: translateY(2px);
   box-shadow: 0 2px 8px rgba(0, 163, 255, 0.4);
+}
+
+.history-link {
+  text-align: center;
+  margin: 20px 0;
+  color: #007AFF;
+  font-size: 16px;
 }
 </style>

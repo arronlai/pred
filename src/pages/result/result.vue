@@ -137,7 +137,23 @@ const nextPage = () => {
 // 使用 uni-app 的生命周期钩子
 onLoad((options) => {
 	if (options.prediction) {
-		prediction.value = decodeURIComponent(options.prediction)
+		try {
+			// 尝试解析JSON格式
+			const data = JSON.parse(decodeURIComponent(options.prediction));
+			// 如果是对象格式且有content字段，使用content字段
+			if (data && typeof data === 'object' && data.content) {
+				prediction.value = data.content;
+			} else if (data && typeof data === 'object' && data.result) {
+				// 兼容历史记录中的result字段
+				prediction.value = data.result;
+			} else {
+				// 否则使用整个字符串
+				prediction.value = decodeURIComponent(options.prediction);
+			}
+		} catch (e) {
+			// 如果不是JSON格式，直接使用原始字符串
+			prediction.value = decodeURIComponent(options.prediction);
+		}
 	}
 })
 

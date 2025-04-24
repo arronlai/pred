@@ -34,19 +34,87 @@ const SYSTEM_PROMPT = `你是一位精通易经、数字命理及生辰八字的
 5.  语言要客观平衡，根据解读如实反映潜在的机遇和挑战。如果分析显示有潜在困难，请提供相应的警示或建议。
 6.  建议要具体可行，便于执行。`;
 
+// 保存预测记录
+async function savePredictionRecord(openid, input, result) {
+    const db = uniCloud.database();
+    try {
+        // 创建预测记录集合（如果不存在）
+        try {
+            await db.collection('prediction_records').count();
+        } catch (error) {
+            if (error.message.includes('not found collection')) {
+                console.log('集合不存在，创建prediction_records集合');
+                await db.createCollection('prediction_records');
+            } else {
+                throw error;
+            }
+        }
+        
+        // 保存记录
+        await db.collection('prediction_records').add({
+            openid,
+            input,
+            result,
+            createTime: Date.now()
+        });
+    } catch (error) {
+        console.error('保存预测记录失败:', error);
+        // 不中断主流程，只记录错误
+    }
+}
+
 exports.main = async (event, context) => {
-  // 从 event 中解构参数，增加 birthday
-  const { numbers, timeStr, birthday } = event;
-
-
   try {
+    // 添加日志
+    console.log('context:', JSON.stringify(context));
+    console.log('event:', JSON.stringify(event));
+    
+    // 验证 token
+    const { token } = event;
+    if (!token) {
+      return {
+        code: -1,
+        message: '未提供用户凭证'
+      };
+    }
+    
+    // 查询用户信息
+    const db = uniCloud.database();
+    const user = await db.collection('users')
+      .where({
+        token: token
+      })
+      .get();
+      
+    if (user.data.length === 0) {
+      return {
+        code: -1,
+        message: '无效的用户凭证'
+      };
+    }
+    
+    const openid = user.data[0].openid;
+    
+    // 处理参数
+    let numbers = [];
+    if (event.numbers) {
+      numbers = event.numbers;
+    } else if (event.number) {
+      numbers = event.number.split(',').map(n => parseInt(n));
+    }
+    
+    const timeStr = event.timeStr || new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+    const birthday = event.birthday;
+    
+    console.log('获取到 openid:', openid);
+
     console.log('开始调用预测API，参数：', { numbers, timeStr, birthday });
     console.log('使用的 API Key (部分):', API_KEY ? API_KEY.substring(0, 5) + '...' : '未配置');
     console.log('使用的 API URL:', API_URL);
 
     if (!API_KEY || !API_URL || API_KEY === 'YOUR_FALLBACK_API_KEY') {
       console.warn('警告：正在使用默认或未配置的 API Key/URL！');
-      // return { code: -1, message: 'API Key 或 API URL 未正确配置' };
+      return { code: -1, message: 'API Key 或 API URL 未正确配置' };
     }
 
     // 动态构建用户提示内容
@@ -100,6 +168,13 @@ exports.main = async (event, context) => {
     } else {
       predictionContent = JSON.stringify(data);
     }
+
+    // 保存预测记录
+    await savePredictionRecord(openid, {
+        numbers,
+        timeStr,
+        birthday
+    }, predictionContent);
 
     return {
       code: 0,
