@@ -3,10 +3,56 @@
     <view class="stars"></view>
     <view class="stars2"></view>
     <view class="stars3"></view>
-    <view class="shooting-star" style="--delay: 0"></view>
-    <view class="shooting-star" style="--delay: 1"></view>
-    <view class="shooting-star" style="--delay: 2"></view>
-    <view class="shooting-star" style="--delay: 3"></view>
+    <view
+      class="shooting-star"
+      style="
+        --delay: 1.2;
+        --top: 20%;
+        --left: 75%;
+        --size: 1.5;
+        --brightness: 1;
+      "
+    ></view>
+    <view
+      class="shooting-star"
+      style="
+        --delay: 3.8;
+        --top: 40%;
+        --left: 85%;
+        --size: 1.2;
+        --brightness: 0.9;
+      "
+    ></view>
+    <view
+      class="shooting-star"
+      style="
+        --delay: 6.5;
+        --top: 5%;
+        --left: 65%;
+        --size: 1.8;
+        --brightness: 0.8;
+      "
+    ></view>
+    <view
+      class="shooting-star"
+      style="
+        --delay: 9.7;
+        --top: 60%;
+        --left: 90%;
+        --size: 1.4;
+        --brightness: 1.1;
+      "
+    ></view>
+    <view
+      class="shooting-star"
+      style="
+        --delay: 13.3;
+        --top: 30%;
+        --left: 70%;
+        --size: 2;
+        --brightness: 0.7;
+      "
+    ></view>
 
     <view class="header">
       <text class="title">历史记录</text>
@@ -147,8 +193,9 @@ export default {
 
 <style>
 .history-container {
-  padding: 20px;
-  min-height: 100vh;
+  padding: 40rpx;
+  height: 100vh;
+  box-sizing: border-box;
   background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
   color: #fff;
   position: relative;
@@ -156,22 +203,22 @@ export default {
 }
 
 .header {
-  margin-bottom: 30px;
+  margin-bottom: 60rpx;
   text-align: center;
   position: relative;
   z-index: 1;
 }
 
 .title {
-  font-size: 28px;
+  font-size: 56rpx;
   font-weight: bold;
   color: #fff;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-  letter-spacing: 2px;
+  text-shadow: 0 0 20rpx rgba(255, 255, 255, 0.3);
+  letter-spacing: 4rpx;
 }
 
 .history-list {
-  margin-bottom: 20px;
+  margin-bottom: 40rpx;
   position: relative;
   z-index: 1;
 }
@@ -179,30 +226,30 @@ export default {
 .loading,
 .empty {
   text-align: center;
-  padding: 24px;
+  padding: 48rpx;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
+  font-size: 28rpx;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  margin: 10px 0;
+  border-radius: 24rpx;
+  margin: 20rpx 0;
 }
 
 .record-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 30rpx;
 }
 
 .record-item {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 32rpx;
+  padding: 32rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
   position: relative;
-  height: 42px;
+  height: 84rpx;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -211,35 +258,35 @@ export default {
 
 .record-item:active {
   transform: scale(0.98);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
 }
 
 .record-header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
 }
 
 .record-time {
-  font-size: 13px;
+  font-size: 26rpx;
   color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 1px;
+  letter-spacing: 2rpx;
 }
 
 .record-numbers {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: bold;
   color: #fff;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  text-shadow: 0 0 20rpx rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .record-numbers::before {
   content: '所选数字：';
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: normal;
   color: rgba(255, 255, 255, 0.7);
 }
@@ -248,111 +295,127 @@ export default {
   background: linear-gradient(45deg, #2979ff, #56ccf2);
   color: white;
   border: none;
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-weight: bold;
-  box-shadow: 0 4px 15px rgba(41, 121, 255, 0.4);
-  transition: all 0.3s ease;
-  width: auto;
-  min-width: 80px;
-  text-align: center;
-  height: 32px;
-  line-height: 20px;
-  margin: 0;
-}
-
-.view-detail-btn:active {
-  transform: translateY(-50%) scale(0.95);
-  box-shadow: 0 2px 8px rgba(41, 121, 255, 0.4);
+  border-radius: 32rpx;
+  font-size: 28rpx;
+  padding: 8rpx 24rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0;
 }
 
 .load-more {
   text-align: center;
-  padding: 16px;
-  color: #56ccf2;
-  font-size: 14px;
-  font-weight: bold;
-  text-shadow: 0 0 10px rgba(86, 204, 242, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 20rpx;
+  font-size: 28rpx;
+  margin-top: 20rpx;
   position: relative;
   z-index: 1;
-  opacity: 0.9;
-  transition: all 0.3s ease;
 }
 
 .load-more:active {
-  opacity: 0.7;
-  transform: scale(0.98);
+  opacity: 0.8;
 }
 
-/* 星星背景 */
+/* Star Styles */
 .stars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 2px;
-  height: 2px;
+  width: 4rpx;
+  height: 4rpx;
   background: transparent;
-  box-shadow: 1804px 1265px #fff, 365px 332px #fff, 86px 1888px #fff,
-    1888px 484px #fff, 199px 1489px #fff, 1459px 1010px #fff, 807px 388px #fff,
-    855px 558px #fff;
+  box-shadow: 3608rpx 2530rpx #fff, 730rpx 664rpx #fff, 172rpx 3776rpx #fff,
+    3776rpx 968rpx #fff, 398rpx 2978rpx #fff, 2918rpx 2020rpx #fff,
+    1614rpx 776rpx #fff, 1710rpx 1116rpx #fff, 166rpx 2190rpx #fff,
+    2836rpx 754rpx #fff, 1354rpx 1772rpx #fff, 1724rpx 3418rpx #fff;
   animation: animStar 50s linear infinite;
   opacity: 0.8;
 }
 
-.stars2 {
+.stars:after {
+  content: ' ';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 3px;
-  height: 3px;
+  top: 4000rpx;
+  width: 4rpx;
+  height: 4rpx;
   background: transparent;
-  box-shadow: 1814px 1275px #fff, 375px 342px #fff, 96px 1898px #fff,
-    1898px 494px #fff;
+  box-shadow: 3608rpx 2530rpx #fff, 730rpx 664rpx #fff, 172rpx 3776rpx #fff,
+    3776rpx 968rpx #fff, 398rpx 2978rpx #fff, 2918rpx 2020rpx #fff,
+    1614rpx 776rpx #fff, 1710rpx 1116rpx #fff, 166rpx 2190rpx #fff,
+    2836rpx 754rpx #fff, 1354rpx 1772rpx #fff, 1724rpx 3418rpx #fff;
+}
+
+.stars2 {
+  width: 6rpx;
+  height: 6rpx;
+  background: transparent;
+  box-shadow: 3628rpx 2550rpx #fff, 750rpx 684rpx #fff, 192rpx 3796rpx #fff,
+    3796rpx 988rpx #fff, 3168rpx 930rpx #fff, 1730rpx 1864rpx #fff,
+    1372rpx 3776rpx #fff, 2576rpx 968rpx #fff;
   animation: animStar 100s linear infinite;
   opacity: 0.9;
 }
 
-.stars3 {
+.stars2:after {
+  content: ' ';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 4px;
-  height: 4px;
+  top: 4000rpx;
+  width: 6rpx;
+  height: 6rpx;
   background: transparent;
-  box-shadow: 1824px 1285px #fff, 385px 352px #fff, 106px 1908px #fff,
-    1908px 504px #fff;
+  box-shadow: 3628rpx 2550rpx #fff, 750rpx 684rpx #fff, 192rpx 3796rpx #fff,
+    3796rpx 988rpx #fff, 3168rpx 930rpx #fff, 1730rpx 1864rpx #fff,
+    1372rpx 3776rpx #fff, 2576rpx 968rpx #fff;
+}
+
+.stars3 {
+  width: 8rpx;
+  height: 8rpx;
+  background: transparent;
+  box-shadow: 3648rpx 2570rpx #fff, 770rpx 704rpx #fff, 212rpx 3816rpx #fff,
+    3816rpx 1008rpx #fff;
   animation: animStar 150s linear infinite;
   opacity: 1;
 }
 
+.stars3:after {
+  content: ' ';
+  position: absolute;
+  top: 4000rpx;
+  width: 8rpx;
+  height: 8rpx;
+  background: transparent;
+  box-shadow: 3648rpx 2570rpx #fff, 770rpx 704rpx #fff, 212rpx 3816rpx #fff,
+    3816rpx 1008rpx #fff;
+}
+
 @keyframes animStar {
   from {
-    transform: translateY(0px);
+    transform: translateY(0rpx);
   }
   to {
-    transform: translateY(-2000px);
+    transform: translateY(-4000rpx);
   }
 }
 
-/* 流星效果 */
 .shooting-star {
   position: absolute;
-  top: 50%;
-  left: 80%;
-  width: 100px;
-  height: 2px;
-  background: linear-gradient(90deg, #fff, transparent);
-  animation: shootingStar 4s infinite;
+  top: var(--top, 50%);
+  left: var(--left, 80%);
+  width: calc(240rpx * var(--size, 1));
+  height: calc(6rpx * var(--size, 1));
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, var(--brightness, 1)),
+    transparent
+  );
+  animation: shootingStar 8s infinite;
   animation-delay: calc(var(--delay) * 1s);
   opacity: 0;
-  z-index: 0;
+  z-index: 2;
+  filter: blur(calc(2rpx * var(--size, 1)));
 }
 
 @keyframes shootingStar {
@@ -360,13 +423,16 @@ export default {
     transform: translate(0, 0) rotate(-45deg) scale(0);
     opacity: 0;
   }
-  10%,
-  20% {
-    transform: translate(-200px, 200px) rotate(-45deg) scale(1);
-    opacity: 1;
+  2% {
+    transform: translate(-40rpx, 40rpx) rotate(-45deg) scale(var(--size, 1));
+    opacity: var(--brightness, 1);
+  }
+  8% {
+    transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1));
+    opacity: 0;
   }
   100% {
-    transform: translate(-400px, 400px) rotate(-45deg) scale(0.2);
+    transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1));
     opacity: 0;
   }
 }

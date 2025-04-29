@@ -261,7 +261,8 @@ const submitFeedback = async () => {
 .container {
 	padding: 20px;
 	background-color: #f5f5f5;
-	min-height: 100vh;
+	height: 100vh;
+box-sizing: border-box;
 }
 
 .feedback-form {

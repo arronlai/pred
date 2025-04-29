@@ -5,10 +5,12 @@
     <view class="stars"></view>
     <view class="stars2"></view>
     <view class="stars3"></view>
-    <view class="shooting-star" style="--delay: 0"></view>
-    <view class="shooting-star" style="--delay: 1"></view>
-    <view class="shooting-star" style="--delay: 2"></view>
-    <view class="shooting-star" style="--delay: 3"></view>
+    <view class="shooting-star" style="--delay: 0; --top: 30%; --left: 80%; --size: 1.5; --brightness: 1"></view>
+    <view class="shooting-star" style="--delay: 2.5; --top: 15%; --left: 70%; --size: 1.2; --brightness: 0.9"></view>
+    <view class="shooting-star" style="--delay: 5.7; --top: 45%; --left: 90%; --size: 1.8; --brightness: 0.8"></view>
+    <view class="shooting-star" style="--delay: 8.3; --top: 10%; --left: 60%; --size: 1.4; --brightness: 1.1"></view>
+    <view class="shooting-star" style="--delay: 12.1; --top: 60%; --left: 75%; --size: 2; --brightness: 0.7"></view>
+    <view class="shooting-star" style="--delay: 15.5; --top: 25%; --left: 85%; --size: 1.3; --brightness: 1.2"></view>
 
     <view class="result-card">
       <h3 class="section-title">{{ currentTitle }}</h3>
@@ -207,23 +209,24 @@ const goHome = () => {
 <style>
 .container {
   height: 100vh;
+box-sizing: border-box;
   display: flex;
   flex-direction: column;
   background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
   position: relative;
-  padding: 20px 15px 0; /* Add top/horizontal padding */
+  padding: 40rpx 30rpx 0; /* 替换为rpx */
   overflow: hidden; /* Hide overflowing stars */
 }
 
 .result-card {
   flex: 1;
-  max-width: 600px;
+  max-width: 1200rpx; /* 替换为rpx */
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 20px;
-  margin: 0 auto 100px; /* Adjust margin, remove top margin */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-radius: 40rpx; /* 替换为rpx */
+  padding: 40rpx; /* 替换为rpx */
+  margin: 0 auto 200rpx; /* 替换为rpx */
+  box-shadow: 0 16rpx 64rpx rgba(0, 0, 0, 0.2); /* 替换为rpx */
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
@@ -233,11 +236,11 @@ const goHome = () => {
 
 .section-title {
   color: #fff;
-  font-size: 22px;
+  font-size: 44rpx; /* 替换为rpx */
   font-weight: bold;
-  margin: 0 0 20px;
-  padding: 10px 0;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  margin: 0 0 40rpx; /* 替换为rpx */
+  padding: 20rpx 0; /* 替换为rpx */
+  text-shadow: 0 0 20rpx rgba(255, 255, 255, 0.3); /* 替换为rpx */
   text-align: center;
   flex-shrink: 0;
 }
@@ -245,19 +248,18 @@ const goHome = () => {
 .result-content {
   flex: 1;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 16px;
+  font-size: 32rpx; /* 替换为rpx */
   line-height: 1.8;
   overflow-y: auto;
-  padding: 15px;
-  -webkit-overflow-scrolling: touch;
+  padding: 0 10rpx; /* 替换为rpx */
 }
 
 .result-content p {
-  margin: 12px 0;
+  margin-bottom: 20rpx; /* 替换为rpx */
 }
 
 .result-content strong {
-  color: #00a3ff;
+  color: #fff;
   font-weight: bold;
 }
 
@@ -272,24 +274,26 @@ const goHome = () => {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  padding: 40rpx; /* 替换为rpx */
+  z-index: 10;
+  background: linear-gradient(to top, rgba(11, 19, 30, 0.9), rgba(11, 19, 30, 0.7), transparent);
+  backdrop-filter: blur(5px);
 }
 
 .button-group {
-  padding: 15px;
-  background: rgba(10, 20, 30, 0.8);
-  backdrop-filter: blur(10px);
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
+  max-width: 1200rpx; /* 替换为rpx */
+  margin: 0 auto;
 }
 
 .nav-btn,
 .back-btn {
-  width: 95px;
-  height: 40px;
-  border-radius: 40px;
+  width: 190rpx;
+  height: 84rpx;
+  border-radius: 80rpx;
   color: white;
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: bold;
   transition: all 0.3s ease;
   display: flex;
@@ -356,20 +360,13 @@ const goHome = () => {
 
 /* Star Styles from index.vue */
 .stars {
-  width: 2px;
-  height: 2px;
+  width: 4rpx; /* 替换为rpx */
+  height: 4rpx; /* 替换为rpx */
   background: transparent;
-  box-shadow: 1804px 1265px #fff, 365px 332px #fff, 86px 1888px #fff,
-    1888px 484px #fff, 199px 1489px #fff, 1459px 1010px #fff, 807px 388px #fff,
-    855px 558px #fff, 83px 1095px #fff, 1418px 377px #fff, 677px 886px #fff,
-    862px 1709px #fff, 1058px 1085px #fff, 50px 1772px #fff, 1941px 1544px #fff,
-    377px 900px #fff, 184px 712px #fff, 1797px 1928px #fff, 507px 1861px #fff,
-    1849px 19px #fff, 1399px 200px #fff, 972px 497px #fff, 795px 1109px #fff,
-    746px 970px #fff, 1524px 972px #fff, 1631px 389px #fff, 1026px 1016px #fff,
-    1295px 862px #fff, 1258px 1876px #fff, 791px 189px #fff, 1584px 465px #fff,
-    865px 932px #fff, 686px 1888px #fff, 1288px 484px #fff, 199px 1489px #fff,
-    1459px 1010px #fff, 807px 388px #fff, 855px 558px #fff, 83px 1095px #fff,
-    1418px 377px #fff;
+  box-shadow: 
+    3608rpx 2530rpx #FFF, 730rpx 664rpx #FFF, 172rpx 3776rpx #FFF, 3776rpx 968rpx #FFF,
+    398rpx 2978rpx #FFF, 2918rpx 2020rpx #FFF, 1614rpx 776rpx #FFF, 1710rpx 1116rpx #FFF,
+    166rpx 2190rpx #FFF, 2836rpx 754rpx #FFF, 1354rpx 1772rpx #FFF, 1724rpx 3418rpx #FFF;
   animation: animStar 50s linear infinite;
   opacity: 0.8;
   position: absolute;
@@ -380,34 +377,25 @@ const goHome = () => {
 }
 
 .stars:after {
-  content: ' ';
+  content: " ";
   position: absolute;
-  top: 2000px;
-  width: 2px;
-  height: 2px;
+  top: 4000rpx; /* 替换为rpx */
+  width: 4rpx; /* 替换为rpx */
+  height: 4rpx; /* 替换为rpx */
   background: transparent;
-  box-shadow: 1804px 1265px #fff, 365px 332px #fff, 86px 1888px #fff,
-    1888px 484px #fff, 199px 1489px #fff, 1459px 1010px #fff, 807px 388px #fff,
-    855px 558px #fff, 83px 1095px #fff, 1418px 377px #fff, 677px 886px #fff,
-    862px 1709px #fff, 1058px 1085px #fff, 50px 1772px #fff, 1941px 1544px #fff,
-    377px 900px #fff, 184px 712px #fff, 1797px 1928px #fff, 507px 1861px #fff,
-    1849px 19px #fff, 1399px 200px #fff, 972px 497px #fff, 795px 1109px #fff,
-    746px 970px #fff, 1524px 972px #fff, 1631px 389px #fff, 1026px 1016px #fff,
-    1295px 862px #fff, 1258px 1876px #fff, 791px 189px #fff, 1584px 465px #fff,
-    865px 932px #fff, 686px 1888px #fff, 1288px 484px #fff, 199px 1489px #fff,
-    1459px 1010px #fff, 807px 388px #fff, 855px 558px #fff, 83px 1095px #fff,
-    1418px 377px #fff;
+  box-shadow: 
+    3608rpx 2530rpx #FFF, 730rpx 664rpx #FFF, 172rpx 3776rpx #FFF, 3776rpx 968rpx #FFF,
+    398rpx 2978rpx #FFF, 2918rpx 2020rpx #FFF, 1614rpx 776rpx #FFF, 1710rpx 1116rpx #FFF,
+    166rpx 2190rpx #FFF, 2836rpx 754rpx #FFF, 1354rpx 1772rpx #FFF, 1724rpx 3418rpx #FFF;
 }
 
 .stars2 {
-  width: 3px;
-  height: 3px;
+  width: 6rpx; /* 替换为rpx */
+  height: 6rpx; /* 替换为rpx */
   background: transparent;
-  box-shadow: 1814px 1275px #fff, 375px 342px #fff, 96px 1898px #fff,
-    1898px 494px #fff, 1584px 465px #fff, 865px 932px #fff, 686px 1888px #fff,
-    1288px 484px #fff, 1399px 200px #fff, 972px 497px #fff, 795px 1109px #fff,
-    746px 970px #fff, 1524px 972px #fff, 1631px 389px #fff, 1026px 1016px #fff,
-    1295px 862px #fff;
+  box-shadow: 
+    3628rpx 2550rpx #FFF, 750rpx 684rpx #FFF, 192rpx 3796rpx #FFF, 3796rpx 988rpx #FFF,
+    3168rpx 930rpx #FFF, 1730rpx 1864rpx #FFF, 1372rpx 3776rpx #FFF, 2576rpx 968rpx #FFF;
   animation: animStar 100s linear infinite;
   opacity: 0.9;
   position: absolute;
@@ -418,26 +406,23 @@ const goHome = () => {
 }
 
 .stars2:after {
-  content: ' ';
+  content: " ";
   position: absolute;
-  top: 2000px;
-  width: 3px;
-  height: 3px;
+  top: 4000rpx; /* 替换为rpx */
+  width: 6rpx; /* 替换为rpx */
+  height: 6rpx; /* 替换为rpx */
   background: transparent;
-  box-shadow: 1814px 1275px #fff, 375px 342px #fff, 96px 1898px #fff,
-    1898px 494px #fff, 1584px 465px #fff, 865px 932px #fff, 686px 1888px #fff,
-    1288px 484px #fff, 1399px 200px #fff, 972px 497px #fff, 795px 1109px #fff,
-    746px 970px #fff, 1524px 972px #fff, 1631px 389px #fff, 1026px 1016px #fff,
-    1295px 862px #fff;
+  box-shadow: 
+    3628rpx 2550rpx #FFF, 750rpx 684rpx #FFF, 192rpx 3796rpx #FFF, 3796rpx 988rpx #FFF,
+    3168rpx 930rpx #FFF, 1730rpx 1864rpx #FFF, 1372rpx 3776rpx #FFF, 2576rpx 968rpx #FFF;
 }
 
 .stars3 {
-  width: 4px;
-  height: 4px;
+  width: 8rpx; /* 替换为rpx */
+  height: 8rpx; /* 替换为rpx */
   background: transparent;
-  box-shadow: 1824px 1285px #fff, 385px 352px #fff, 106px 1908px #fff,
-    1908px 504px #fff, 1594px 475px #fff, 875px 942px #fff, 696px 1898px #fff,
-    1298px 494px #fff;
+  box-shadow: 
+    3648rpx 2570rpx #FFF, 770rpx 704rpx #FFF, 212rpx 3816rpx #FFF, 3816rpx 1008rpx #FFF;
   animation: animStar 150s linear infinite;
   opacity: 1;
   position: absolute;
@@ -448,38 +433,38 @@ const goHome = () => {
 }
 
 .stars3:after {
-  content: ' ';
+  content: " ";
   position: absolute;
-  top: 2000px;
-  width: 4px;
-  height: 4px;
+  top: 4000rpx; /* 替换为rpx */
+  width: 8rpx; /* 替换为rpx */
+  height: 8rpx; /* 替换为rpx */
   background: transparent;
-  box-shadow: 1824px 1285px #fff, 385px 352px #fff, 106px 1908px #fff,
-    1908px 504px #fff, 1594px 475px #fff, 875px 942px #fff, 696px 1898px #fff,
-    1298px 494px #fff;
+  box-shadow: 
+    3648rpx 2570rpx #FFF, 770rpx 704rpx #FFF, 212rpx 3816rpx #FFF, 3816rpx 1008rpx #FFF;
 }
 
 @keyframes animStar {
   from {
-    transform: translateY(0px);
+    transform: translateY(0rpx); /* 替换为rpx */
   }
   to {
-    transform: translateY(-2000px);
+    transform: translateY(-4000rpx); /* 替换为rpx */
   }
 }
 
 /* Shooting Star Styles */
 .shooting-star {
   position: absolute;
-  top: 50%;
-  left: 80%;
-  width: 100px;
-  height: 2px;
-  background: linear-gradient(90deg, #fff, transparent);
-  animation: shootingStar 4s infinite;
+  top: var(--top, 50%);
+  left: var(--left, 80%);
+  width: calc(240rpx * var(--size, 1)); /* 替换为rpx */
+  height: calc(6rpx * var(--size, 1)); /* 替换为rpx */
+  background: linear-gradient(90deg, rgba(255, 255, 255, var(--brightness, 1)), transparent);
+  animation: shootingStar 8s infinite;
   animation-delay: calc(var(--delay) * 1s);
   opacity: 0;
-  z-index: 0; /* Ensure stars are behind card */
+  z-index: 2;
+  filter: blur(calc(2rpx * var(--size, 1))); /* 替换为rpx */
 }
 
 @keyframes shootingStar {
@@ -487,13 +472,16 @@ const goHome = () => {
     transform: translate(0, 0) rotate(-45deg) scale(0);
     opacity: 0;
   }
-  10%,
-  20% {
-    transform: translate(-200px, 200px) rotate(-45deg) scale(1);
-    opacity: 1;
+  2% {
+    transform: translate(-40rpx, 40rpx) rotate(-45deg) scale(var(--size, 1)); /* 替换为rpx */
+    opacity: var(--brightness, 1);
+  }
+  8% {
+    transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1)); /* 替换为rpx */
+    opacity: 0;
   }
   100% {
-    transform: translate(-400px, 400px) rotate(-45deg) scale(0.2);
+    transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1)); /* 替换为rpx */
     opacity: 0;
   }
 }
