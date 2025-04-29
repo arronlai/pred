@@ -195,6 +195,7 @@ export default {
 .history-container {
   padding: 40rpx;
   height: 100vh;
+  overflow: hidden;
   box-sizing: border-box;
   background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
   color: #fff;

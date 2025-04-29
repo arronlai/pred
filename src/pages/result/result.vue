@@ -209,6 +209,7 @@ const goHome = () => {
 <style>
 .container {
   height: 100vh;
+  overflow: hidden;
 box-sizing: border-box;
   display: flex;
   flex-direction: column;

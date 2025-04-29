@@ -46,6 +46,52 @@
 
         <button class="confirm-btn" @click="confirmUserInfo">确认</button>
       </view>
+
+      <!-- 添加协议声明文字 -->
+      <view class="agreement-text">
+        登录即代表您同意
+        <text class="link" @click="showAgreement">《服务协议》</text>
+        和
+        <text class="link" @click="showPrivacy">《免责声明》</text>
+      </view>
+    </view>
+    
+    <!-- 协议弹窗 -->
+    <view class="popup" v-if="showPopup">
+      <view class="popup-content">
+        <view class="popup-header">
+          <text class="popup-title">{{ popupTitle }}</text>
+          <text class="popup-close" @click="closePopup">×</text>
+        </view>
+        <scroll-view class="popup-body" scroll-y="true">
+          <view v-if="popupType === 'agreement'" class="content-wrapper">
+            <!-- <view class="popup-subtitle">用户服务协议</view> -->
+            <view class="popup-text">
+              <view class="popup-item">1. 服务介绍：本服务是一款基于人工智能的数字预测工具，旨在提供娱乐和参考用途。</view>
+              <view class="popup-item">2. 账号注册：用户需使用微信登录授权，我们可能获取您的头像和昵称信息用于服务提供。</view>
+              <view class="popup-item">3. 使用规则：每位用户每日有基础使用次数限制，通过分享可获得额外使用次数。</view>
+              <view class="popup-item">4. 信息保护：我们会对用户提供的信息进行保密，不会将您的个人信息用于服务之外的用途。</view>
+              <view class="popup-item">5. 内容所有权：本应用内容的所有权归开发者所有，用户不得进行商业用途的复制或传播。</view>
+              <view class="popup-item">6. 用户内容：用户提交的信息不得包含违法、侵权等内容，否则我们有权删除并追究相关责任。</view>
+              <view class="popup-item">7. 服务变更：我们有权随时修改或中断服务，修改后的协议在公布后立即生效。</view>
+            </view>
+          </view>
+          <view v-else-if="popupType === 'privacy'" class="content-wrapper">
+            <!-- <view class="popup-subtitle">免责声明</view> -->
+            <view class="popup-text">
+              <view class="popup-item">1. 预测结果仅供娱乐参考：本应用生成的所有预测内容仅供娱乐和参考，不构成任何建议或决策依据。</view>
+              <view class="popup-item">2. 不承担决策责任：用户基于本应用内容做出的任何决策所产生的后果，由用户自行承担。</view>
+              <view class="popup-item">3. 服务中断免责：因不可抗力、设备故障、网络问题等原因导致服务中断，我们不承担责任。</view>
+              <view class="popup-item">4. 内容准确性：我们不对AI生成内容的准确性、适用性或完整性作出任何明示或暗示的保证。</view>
+              <view class="popup-item">5. 第三方链接：本应用可能包含第三方链接，对于第三方的内容、隐私政策及行为不承担任何责任。</view>
+              <view class="popup-item">6. 用户投诉处理：我们会尽力处理用户反馈的问题，但不保证能满足所有用户的要求。</view>
+            </view>
+          </view>
+        </scroll-view>
+        <view class="popup-footer">
+          <button class="popup-btn" @click="closePopup">我已阅读并同意</button>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -61,6 +107,11 @@ const avatarUrl = ref('/static/default-avatar.png');
 const nickName = ref('');
 // 是否显示头像昵称输入区域
 const showProfileInput = ref(false);
+
+// 弹窗状态
+const showPopup = ref(false);
+const popupType = ref('');
+const popupTitle = ref('');
 
 // 页面加载获取重定向地址
 onLoad((options) => {
@@ -208,22 +259,30 @@ const handleLogin = async (userInfo) => {
   }
 };
 
+// 显示服务协议
 const showAgreement = () => {
-  uni.navigateTo({
-    url: '/pages/agreement/agreement?type=user',
-  });
+  popupType.value = 'agreement';
+  popupTitle.value = '服务协议';
+  showPopup.value = true;
 };
 
+// 显示隐私政策
 const showPrivacy = () => {
-  uni.navigateTo({
-    url: '/pages/agreement/agreement?type=privacy',
-  });
+  popupType.value = 'privacy';
+  popupTitle.value = '免责声明';
+  showPopup.value = true;
+};
+
+// 关闭弹窗
+const closePopup = () => {
+  showPopup.value = false;
 };
 </script>
 
 <style>
 .container {
   height: 100vh;
+  overflow: hidden;
 box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -265,12 +324,15 @@ box-sizing: border-box;
   background: linear-gradient(45deg, #2979ff, #56ccf2);
   border: none;
   color: white;
-  padding: 24rpx 0;
+  padding: 12rpx 0;
   width: 90%;
   font-size: 34rpx;
   border-radius: 40rpx;
   margin: 40rpx auto;
   box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-area {
@@ -460,5 +522,94 @@ box-sizing: border-box;
     transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1));
     opacity: 0;
   }
+}
+
+/* 弹窗样式 */
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+}
+
+.popup-content {
+  width: 80%;
+  max-width: 600rpx;
+  background: rgba(27, 38, 54, 0.95);
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
+.popup-header {
+  padding: 30rpx;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popup-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #fff;
+}
+
+.popup-close {
+  font-size: 48rpx;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1;
+}
+
+.popup-body {
+  max-height: 60vh;
+  box-sizing: border-box;
+}
+.popup-body  .content-wrapper {
+  padding: 30rpx;
+}
+
+.popup-subtitle {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #56ccf2;
+  margin-bottom: 20rpx;
+}
+
+.popup-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+.popup-item {
+  margin-bottom: 20rpx;
+}
+
+.popup-footer {
+  padding: 30rpx;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.popup-btn {
+  background: linear-gradient(45deg, #2979ff, #56ccf2);
+  color: white;
+  border: none;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  padding: 20rpx 0;
+  width: 100%;
 }
 </style>
