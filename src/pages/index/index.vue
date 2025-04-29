@@ -106,16 +106,22 @@ const numbers = ref(['', '', ''])
 const prediction = ref('')
 const isLoading = ref(false)
 const usageInfo = ref(null)
+const isSharing = ref(false)
 
 // 配置分享行为
 onShareAppMessage(() => {
+  // 设置正在分享标识
+  isSharing.value = true;
+  
   return {
-    title: '答案之数 - 用数字预测未来',
+    title: '问问AI',
     path: '/pages/index/index',
-    imageUrl: '/static/share-image.png',
+    imageUrl: '/static/logo.png',
     success: function() {
-      console.log('分享成功，记录分享行为');
+      console.log('分享成功回调触发，记录分享行为');
       recordShareAction();
+      // 重置分享状态，防止onShow重复处理
+      isSharing.value = false;
     }
   }
 })
@@ -123,9 +129,15 @@ onShareAppMessage(() => {
 // 记录分享行为
 const recordShareAction = async () => {
   try {
-    const userInfo = uni.getStorageSync('userInfo');
-    if (!userInfo || !userInfo.token) return;
+    console.log('开始记录分享行为');
     
+    const userInfo = uni.getStorageSync('userInfo');
+    if (!userInfo || !userInfo.token) {
+      console.error('记录分享失败: 用户未登录');
+      return;
+    }
+    
+    console.log('调用云函数记录分享...');
     const result = await uniCloud.callFunction({
       name: 'recordShare',
       data: {
@@ -135,12 +147,16 @@ const recordShareAction = async () => {
       }
     });
     
+    console.log('分享云函数返回结果:', JSON.stringify(result.result));
+    
     if (result.result && result.result.code === 0) {
       if (!result.result.data.already_shared) {
         uni.showToast({
           title: '分享成功，获得额外使用次数',
           icon: 'none'
         });
+      } else {
+        console.log('用户今日已分享过');
       }
       
       // 如果返回了使用情况，直接更新
@@ -150,9 +166,12 @@ const recordShareAction = async () => {
         // 否则刷新使用情况
         checkUsageInfo();
       }
+    } else {
+      console.error('云函数调用成功但返回错误:', result.result);
+      checkUsageInfo();
     }
   } catch (error) {
-    console.error('记录分享失败:', error);
+    console.error('记录分享失败具体错误:', error);
     // 刷新使用情况
     checkUsageInfo();
   }
@@ -249,6 +268,15 @@ onShow(() => {
     const userInfo = uni.getStorageSync('userInfo');
     if (userInfo && userInfo.token) {
         console.log('页面显示，刷新使用情况');
+        
+        // 如果正在分享状态，说明分享面板已关闭
+        if (isSharing.value) {
+            console.log('检测到从分享返回，记录分享行为');
+            recordShareAction();
+            // 处理完后重置分享状态
+            isSharing.value = false;
+        }
+        
         checkUsageInfo();
     }
 });
