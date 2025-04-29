@@ -125,6 +125,69 @@ exports.main = async (event, context) => {
     
     const openid = user.data[0].openid;
     
+    // 检查用户今日使用次数
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).getTime();
+    
+    // 查询用户今日已使用次数
+    const todayRecords = await db.collection('prediction_records')
+      .where({
+        openid: openid,
+        createTime: db.command.gte(startOfDay).and(db.command.lte(endOfDay))
+      })
+      .count();
+    
+    const usedCount = todayRecords.total || 0;
+    const baseLimit = 1; // 基础每日限制次数
+    
+    // 获取用户是否通过分享获得额外次数
+    let hasShared = false;
+    try {
+      const userShareRecord = await db.collection('user_shares')
+        .where({
+          openid: openid,
+          shareDate: db.command.gte(startOfDay).and(db.command.lte(endOfDay))
+        })
+        .count();
+      
+      hasShared = (userShareRecord.total || 0) > 0;
+    } catch (error) {
+      // 如果集合不存在，创建集合
+      if (error.message.includes('not found collection')) {
+        console.log('集合不存在，创建user_shares集合');
+        await db.createCollection('user_shares');
+      }
+    }
+    
+    const totalLimit = hasShared ? 2 : 1; // 分享后总次数为2，否则为1
+    
+    // 检查是否超出每日限制
+    if (usedCount >= totalLimit) {
+      // 已达到使用上限
+      let message = '';
+      
+      if (hasShared || usedCount > 1) {
+        // 已分享或已使用多次，提示明天再来
+        message = '您今日的使用次数已达上限，明天再来试试吧！';
+      } else {
+        // 未分享且刚好用完基础次数，提示分享获取更多
+        message = '您的基础次数已用完，分享小程序可获取更多使用次数！';
+      }
+      
+      return {
+        code: -2,
+        message: message,
+        data: {
+          used_count: usedCount,
+          base_limit: baseLimit,
+          shared: hasShared,
+          total_limit: totalLimit,
+          remaining: 0
+        }
+      };
+    }
+    
     // 处理参数
     let numbers = [];
     if (event.numbers) {
@@ -208,7 +271,14 @@ exports.main = async (event, context) => {
 
     return {
       code: 0,
-      content: predictionContent
+      content: predictionContent,
+      usage: {
+        used_count: usedCount + 1,
+        base_limit: baseLimit,
+        shared: hasShared,
+        total_limit: totalLimit,
+        remaining: totalLimit - (usedCount + 1)
+      }
     };
   } catch (error) {
     console.error('预测失败，详细错误：', {

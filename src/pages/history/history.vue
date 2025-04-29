@@ -9,7 +9,7 @@
     <view class="shooting-star" style="--delay: 3"></view>
 
     <view class="header">
-      <text class="title">预测历史</text>
+      <text class="title">历史记录</text>
     </view>
 
     <view class="history-list">

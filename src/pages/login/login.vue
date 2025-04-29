@@ -2,7 +2,7 @@
   <view class="container">
     <view class="login-card">
       <image class="logo" src="/static/logo.png" mode="aspectFit"></image>
-      <view class="title">答案之数</view>
+      <view class="title">问问AI</view>
       <view class="subtitle"></view>
 
       <!-- 使用新的授权方式 -->

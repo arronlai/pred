@@ -37,20 +37,37 @@ exports.main = async (event, context) => {
         
         console.log('获取到 openid:', openid);
         
+        // 构建查询条件
+        let where = {
+            openid: openid
+        };
+        
+        // 如果有时间范围，添加到查询条件
+        if (event.timeRange) {
+            const { start, end } = event.timeRange;
+            if (start && end) {
+                console.log('查询时间范围:', new Date(start), '至', new Date(end));
+                where.createTime = db.command.gte(start).and(db.command.lte(end));
+            } else if (start) {
+                console.log('查询时间范围:', new Date(start), '之后');
+                where.createTime = db.command.gte(start);
+            } else if (end) {
+                console.log('查询时间范围:', '至', new Date(end));
+                where.createTime = db.command.lte(end);
+            }
+        }
+        
         // 查询记录总数
         const countResult = await db.collection('prediction_records')
-            .where({
-                openid: openid
-            })
+            .where(where)
             .count();
             
-        const total = countResult.total;
+        const total = countResult.total || 0;
+        console.log('符合条件的记录总数:', total);
         
         // 查询记录列表
         const records = await db.collection('prediction_records')
-            .where({
-                openid: openid
-            })
+            .where(where)
             .orderBy('createTime', 'desc')
             .skip((page - 1) * pageSize)
             .limit(pageSize)
@@ -67,10 +84,10 @@ exports.main = async (event, context) => {
         };
         
     } catch (error) {
-        console.error('获取预测历史失败:', error);
+        console.error('获取历史记录失败:', error);
         return {
             code: -1,
-            message: error.message || '获取预测历史失败'
+            message: error.message || '获取历史记录失败'
         };
     }
 }; 
