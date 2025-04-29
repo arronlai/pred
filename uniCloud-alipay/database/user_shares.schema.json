@@ -1,0 +1,34 @@
+{
+  "bsonType": "object",
+  "required": ["openid", "shareDate", "shareType", "shareContent"],
+  "permission": {
+    "read": "auth.openid == doc.openid",
+    "create": "auth.openid == doc.openid",
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "存储文档 ID，系统自动生成",
+      "bsonType": "string"
+    },
+    "openid": {
+      "description": "用户openid",
+      "bsonType": "string"
+    },
+    "shareDate": {
+      "description": "分享时间",
+      "bsonType": "timestamp"
+    },
+    "shareType": {
+      "description": "分享类型",
+      "bsonType": "string",
+      "enum": ["wechat", "timeline", "qq", "weibo", "other"]
+    },
+    "shareContent": {
+      "description": "分享内容",
+      "bsonType": "string",
+      "enum": ["app", "prediction", "result", "other"]
+    }
+  }
+} 

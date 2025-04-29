@@ -9,8 +9,32 @@
     <view class="shooting-star" style="--delay: 3"></view>
     
     <view class="header">
-      <text class="title">答案之数</text>
+      <text class="title">问问AI</text>
       <text class="subtitle">✨ 抛出硬币的时候，希望你找到答案 ✨</text>
+    </view>
+    
+    <view class="usage-info" v-if="usageInfo">
+      <!-- 未分享且已用完基础次数 -->
+      <template v-if="usageInfo.used_count >= usageInfo.base_limit && !usageInfo.shared">
+        <text class="usage-text">今日已用 {{usageInfo.used_count}}/{{usageInfo.base_limit}} 次</text>
+        <button class="share-btn" open-type="share">
+          <text class="share-text">分享获取更多次数</text>
+        </button>
+      </template>
+      
+      <!-- 已分享 -->
+      <template v-else-if="usageInfo.shared">
+        <text class="usage-text">今日已用 {{usageInfo.used_count}}/{{usageInfo.total_limit}} 次</text>
+      </template>
+      
+      <!-- 未分享且未用完基础次数 -->
+      <template v-else>
+        <text class="usage-text">今日已用 {{usageInfo.used_count}}/{{usageInfo.base_limit}} 次</text>
+      </template>
+    </view>
+    
+    <view class="history-link" @click="goToHistory">
+      <text>查看历史记录</text>
     </view>
     
     <view class="input-section">
@@ -49,15 +73,15 @@
           <view class="input-border"></view>
         </view>
       </view>
-      <button @click="getPrediction" class="predict-btn" :disabled="isLoading" :class="{'predict-btn-loading': isLoading}">
+      <button @click="handleStartPrediction" class="predict-btn" :disabled="isLoading || (usageInfo && usageInfo.remaining <= 0)" :class="{'predict-btn-loading': isLoading}">
         <text class="predict-btn-text">{{ isLoading ? '正在推算...' : '开始预测' }}</text>
         <view class="btn-glow"></view>
       </button>
       
       <!-- 添加测试按钮 -->
-      <button @click="testWithMockData" class="test-btn">
+      <!-- <button @click="testWithMockData" class="test-btn">
         <text class="test-btn-text">测试UI</text>
-      </button>
+      </button> -->
     </view>
     
     <view v-if="prediction" class="prediction-section">
@@ -67,20 +91,195 @@
       </view>
       <view class="prediction-content">{{ prediction }}</view>
     </view>
+
+    <!-- 添加反馈按钮 -->
+    <feedback-btn></feedback-btn>
   </view>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { checkLogin } from '@/utils/auth.js'
+import { onLoad, onShareAppMessage, onShow } from '@dcloudio/uni-app';
 
 const numbers = ref(['', '', ''])
 const prediction = ref('')
 const isLoading = ref(false)
+const usageInfo = ref(null)
+const isSharing = ref(false)
 
-// 页面加载时不需要随机选择标题
-onMounted(() => {
-  // 不再需要随机选择标题
+// 配置分享行为
+onShareAppMessage(() => {
+  // 设置正在分享标识
+  isSharing.value = true;
+  
+  return {
+    title: '问问AI',
+    path: '/pages/index/index',
+    imageUrl: '/static/logo.png',
+    success: function() {
+      console.log('分享成功回调触发，记录分享行为');
+      recordShareAction();
+      // 重置分享状态，防止onShow重复处理
+      isSharing.value = false;
+    }
+  }
 })
+
+// 记录分享行为
+const recordShareAction = async () => {
+  try {
+    console.log('开始记录分享行为');
+    
+    const userInfo = uni.getStorageSync('userInfo');
+    if (!userInfo || !userInfo.token) {
+      console.error('记录分享失败: 用户未登录');
+      return;
+    }
+    
+    console.log('调用云函数记录分享...');
+    const result = await uniCloud.callFunction({
+      name: 'recordShare',
+      data: {
+        token: userInfo.token,
+        shareType: 'wechat',
+        shareContent: 'app'
+      }
+    });
+    
+    console.log('分享云函数返回结果:', JSON.stringify(result.result));
+    
+    if (result.result && result.result.code === 0) {
+      if (!result.result.data.already_shared) {
+        uni.showToast({
+          title: '分享成功，获得额外使用次数',
+          icon: 'none'
+        });
+      } else {
+        console.log('用户今日已分享过');
+      }
+      
+      // 如果返回了使用情况，直接更新
+      if (result.result.data.usage) {
+        usageInfo.value = result.result.data.usage;
+      } else {
+        // 否则刷新使用情况
+        checkUsageInfo();
+      }
+    } else {
+      console.error('云函数调用成功但返回错误:', result.result);
+      checkUsageInfo();
+    }
+  } catch (error) {
+    console.error('记录分享失败具体错误:', error);
+    // 刷新使用情况
+    checkUsageInfo();
+  }
+}
+
+// 获取使用情况
+const checkUsageInfo = async () => {
+  try {
+    const userInfo = uni.getStorageSync('userInfo');
+    if (!userInfo || !userInfo.token) return;
+    
+    // 查询今日已使用记录
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).getTime();
+    
+    // 获取预测记录
+    const predictionResult = await uniCloud.callFunction({
+      name: 'getPredictionHistory',
+      data: {
+        token: userInfo.token,
+        timeRange: {
+          start: startOfDay,
+          end: endOfDay
+        }
+      }
+    });
+    
+    if (predictionResult.result && predictionResult.result.code === 0) {
+      const usedCount = predictionResult.result.data.total || 0;
+      
+      // 获取分享记录
+      const shareResult = await uniCloud.callFunction({
+        name: 'recordShare',
+        data: {
+          token: userInfo.token,
+          checkOnly: true
+        }
+      });
+      
+      // 打印调试信息
+      console.log('分享状态检查结果:', JSON.stringify(shareResult.result));
+      
+      const baseLimit = 1; // 基础使用次数
+      const hasShared = shareResult.result && 
+                       shareResult.result.code === 0 && 
+                       shareResult.result.data && 
+                       shareResult.result.data.already_shared === true;
+      
+      // 打印更多调试信息
+      console.log('判断分享状态:', {
+        resultCode: shareResult.result?.code,
+        dataExists: !!shareResult.result?.data,
+        alreadyShared: shareResult.result?.data?.already_shared,
+        finalHasShared: hasShared
+      });
+      
+      const totalLimit = hasShared ? 2 : 1; // 分享后总次数为2，否则为1
+      
+      // 更新使用信息
+      usageInfo.value = {
+        used_count: usedCount,
+        base_limit: baseLimit,
+        shared: hasShared,
+        total_limit: totalLimit,
+        remaining: Math.max(0, totalLimit - usedCount)
+      };
+      
+      // 打印最终使用信息
+      console.log('最终使用信息:', JSON.stringify(usageInfo.value));
+    }
+  } catch (error) {
+    console.error('获取使用情况失败:', error);
+  }
+}
+
+// 页面加载
+onLoad(() => {
+    // 检查用户是否已登录
+    const userInfo = uni.getStorageSync('userInfo');
+    if (!userInfo) {
+        // 未登录，跳转到登录页
+        uni.navigateTo({
+            url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
+        });
+    } else {
+        // 检查使用情况
+        checkUsageInfo();
+    }
+});
+
+// 每次页面显示时都刷新使用情况
+onShow(() => {
+    const userInfo = uni.getStorageSync('userInfo');
+    if (userInfo && userInfo.token) {
+        console.log('页面显示，刷新使用情况');
+        
+        // 如果正在分享状态，说明分享面板已关闭
+        if (isSharing.value) {
+            console.log('检测到从分享返回，记录分享行为');
+            recordShareAction();
+            // 处理完后重置分享状态
+            isSharing.value = false;
+        }
+        
+        checkUsageInfo();
+    }
+});
 
 // 添加测试函数
 const testWithMockData = () => {
@@ -95,55 +294,192 @@ const testWithMockData = () => {
   })
 }
 
+const handleStartPrediction = async () => {
+    // 检查用户是否已登录
+    const userInfo = uni.getStorageSync('userInfo');
+    if (!userInfo || !userInfo.token) {
+        // 清空不完整的用户信息
+        uni.removeStorageSync('userInfo');
+        // 未登录，跳转到登录页
+        uni.navigateTo({
+            url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
+        });
+        return;
+    }
+    
+    // 检查今日使用情况
+    if (usageInfo.value && usageInfo.value.remaining <= 0) {
+        // 用完所有次数
+        if (usageInfo.value.shared || usageInfo.value.used_count > 1) {
+            // 已分享或已使用多次，提示明天再来
+            uni.showModal({
+                title: '提示',
+                content: '您今日的使用次数已达上限，明天再来试试吧！',
+                showCancel: false,
+                confirmText: '知道了'
+            });
+        } else {
+            // 未分享，提示分享获取更多次数
+            uni.showModal({
+                title: '提示',
+                content: '您的基础次数已用完，分享小程序可获取更多使用次数！',
+                confirmText: '去分享',
+                success: (res) => {
+                    if (res.confirm) {
+                        // 触发分享
+                        uni.showShareMenu({
+                            withShareTicket: true,
+                            menus: ['shareAppMessage', 'shareTimeline']
+                        });
+                    }
+                }
+            });
+        }
+        return;
+    }
+
+    // 已登录，继续预测流程
+    if (!numbers.value[0] || !numbers.value[1] || !numbers.value[2]) {
+        uni.showToast({
+            title: '请在心里想着您的问题，输入3个数字（1-100之间）',
+            icon: 'none'
+        });
+        return;
+    }
+
+    // 检查是否已预测过
+    if (prediction.value) {
+        uni.showModal({
+            title: '提示',
+            content: '您已经进行过预测，是否重新预测？',
+            success: (res) => {
+                if (res.confirm) {
+                    getPrediction();
+                }
+            }
+        });
+    } else {
+        getPrediction();
+    }
+};
+
 const getPrediction = async () => {
+  // 检查是否已登录
+  if (!checkLogin()) return;
+  
   // 验证输入
   if (numbers.value.some(num => !num || Number(num) < 1 || Number(num) > 100)) {
     uni.showToast({
       title: '请输入1-100之间的数字',
       icon: 'none'
-    })
-    return
+    });
+    return;
   }
-
-  isLoading.value = true
+  
+  // 获取用户信息
+  const userInfo = uni.getStorageSync('userInfo');
+  if (!userInfo || !userInfo.token) {
+    // 清空不完整的用户信息
+    uni.removeStorageSync('userInfo');
+    uni.showToast({
+      title: '用户信息不完整，请重新登录',
+      icon: 'none'
+    });
+    // 跳转到登录页
+    uni.navigateTo({
+      url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
+    });
+    return;
+  }
+  
+  isLoading.value = true;
+  
   try {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = now.getMonth() + 1
-    const day = now.getDate()
-    const hour = now.getHours()
-    const minute = now.getMinutes()
-    const timeStr = `${year}年${month}月${day}日 ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-    
-    const { result } = await uniCloud.callFunction({
+    const result = await uniCloud.callFunction({
       name: 'generatePrediction',
       data: {
-        numbers: numbers.value,
-        timeStr,
+        number: numbers.value.join(','),
+        token: userInfo.token
       }
-    })
-
-    if (result && result.content) {
-      // 跳转到结果页面
-      uni.navigateTo({
-        url: `/pages/result/result?prediction=${encodeURIComponent(result.content)}`
-      })
-    } else {
-      throw new Error('云函数返回格式错误')
-    }
+    });
     
+    if (result.result) {
+      if (result.result.code === 0) {
+        const prediction = result.result.content;
+        
+        // 更新使用情况
+        if (result.result.usage) {
+          usageInfo.value = result.result.usage;
+        }
+        
+        // 跳转到结果页
+        uni.navigateTo({
+          url: `/pages/result/result?prediction=${encodeURIComponent(prediction)}`
+        });
+      } else if (result.result.code === -2) {
+        // 使用次数达到限制
+        uni.showModal({
+          title: '使用次数已达上限',
+          content: result.result.message,
+          confirmText: '去分享',
+          success: (res) => {
+            if (res.confirm && result.result.data && result.result.data.can_share) {
+              // 触发分享
+              uni.showShareMenu({
+                withShareTicket: true,
+                menus: ['shareAppMessage', 'shareTimeline']
+              });
+            }
+          }
+        });
+        
+        // 更新使用情况
+        if (result.result.data) {
+          usageInfo.value = {
+            used_count: result.result.data.used_count,
+            daily_limit: result.result.data.daily_limit,
+            remaining: result.result.data.remaining,
+            can_share: result.result.data.can_share
+          };
+        }
+      } else {
+        throw new Error(result.result.message || '生成预测失败');
+      }
+    } else {
+      throw new Error('生成预测失败');
+    }
   } catch (error) {
-    console.error('预测失败:', error)
-    // 显示更详细的错误信息
     uni.showToast({
-      title: error.message || '网络异常，请重试或联系客服',
-      icon: 'none',
-      duration: 3000
-    })
+      title: error.message || '生成预测失败，请重试',
+      icon: 'none'
+    });
+    console.error('生成预测失败：', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
+
+const goToHistory = () => {
+  // 获取用户信息
+  const userInfo = uni.getStorageSync('userInfo');
+  if (!userInfo || !userInfo.token) {
+    // 清空不完整的用户信息
+    uni.removeStorageSync('userInfo');
+    uni.showToast({
+      title: '用户信息不完整，请重新登录',
+      icon: 'none'
+    });
+    // 跳转到登录页
+    uni.navigateTo({
+      url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/index/index')
+    });
+    return;
+  }
+  
+  uni.navigateTo({
+    url: '/pages/history/history'
+  });
+};
 </script>
 
 <style>
@@ -156,6 +492,43 @@ const getPrediction = async () => {
   background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
   position: relative;
   overflow: hidden;
+}
+
+.usage-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(5px);
+  border-radius: 20px;
+  gap: 10px;
+}
+
+.usage-text {
+  font-size: 14px;
+  color: rgba(255,255,255,0.9);
+}
+
+.share-btn {
+  background: linear-gradient(45deg, #2979ff, #56ccf2);
+  border: none;
+  border-radius: 30px;
+  font-size: 12px;
+  color: white;
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  height: 28px;
+  min-height: unset;
+  margin: 0;
+}
+
+.share-text {
+  font-size: 12px;
 }
 
 .input-section {
@@ -512,5 +885,12 @@ const getPrediction = async () => {
 .test-btn:active {
   transform: translateY(2px);
   box-shadow: 0 2px 8px rgba(0, 163, 255, 0.4);
+}
+
+.history-link {
+  text-align: center;
+  margin: 20px 0;
+  color: #007AFF;
+  font-size: 16px;
 }
 </style>

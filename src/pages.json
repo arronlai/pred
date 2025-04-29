@@ -1,5 +1,5 @@
 {
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+	"pages": [
 		{
 			"path": "pages/index/index",
 			"style": {
@@ -9,12 +9,36 @@
 			"path": "pages/result/result",
 			"style": {
 			}
+		},
+		{
+			"path": "pages/feedback/feedback",
+			"style": {
+				"navigationBarTitleText": "意见反馈"
+			}
+		},
+		{
+			"path": "pages/history/history",
+			"style": {
+				"navigationBarTitleText": "历史记录"
+			}
+		},
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录"
+			}
 		}
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "white",
-		"navigationBarTitleText": "答案之数",
+		"navigationBarTitleText": "问问AI",
 		"navigationBarBackgroundColor": "#090A0F",
 		"backgroundColor": "#F9FAFB"
+	},
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^feedback-btn": "@/components/feedback-btn/feedback-btn.vue"
+		}
 	}
 }

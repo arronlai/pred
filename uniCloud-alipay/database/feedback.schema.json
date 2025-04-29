@@ -1,0 +1,59 @@
+{
+	"bsonType": "object",
+	"required": ["type", "content"],
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"type": {
+			"bsonType": "string",
+			"description": "反馈类型，如问题反馈、功能建议等",
+			"enum": ["问题反馈", "功能建议", "其他"]
+		},
+		"content": {
+			"bsonType": "string",
+			"description": "反馈内容"
+		},
+		"contact": {
+			"bsonType": "string",
+			"description": "联系方式，选填"
+		},
+		"images": {
+			"bsonType": "array",
+			"description": "图片列表",
+			"items": {
+				"bsonType": "string"
+			}
+		},
+		"userInfo": {
+			"bsonType": "object",
+			"description": "用户信息",
+			"properties": {
+				"openid": {
+					"bsonType": "string",
+					"description": "用户openid"
+				},
+				"platform": {
+					"bsonType": "string",
+					"description": "平台类型"
+				}
+			}
+		},
+		"createTime": {
+			"bsonType": "timestamp",
+			"description": "创建时间"
+		},
+		"status": {
+			"bsonType": "string",
+			"description": "处理状态",
+			"enum": ["pending", "processing", "resolved"],
+			"defaultValue": "pending"
+		}
+	}
+} 

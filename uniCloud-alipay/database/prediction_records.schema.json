@@ -1,0 +1,49 @@
+{
+  "bsonType": "object",
+  "required": ["openid", "input", "result", "createTime"],
+  "permission": {
+    "read": "auth.openid == doc.openid",
+    "create": "auth.openid == doc.openid",
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "存储文档 ID，系统自动生成",
+      "bsonType": "string"
+    },
+    "openid": {
+      "description": "用户openid",
+      "bsonType": "string"
+    },
+    "input": {
+      "description": "用户输入参数",
+      "bsonType": "object",
+      "properties": {
+        "numbers": {
+          "description": "用户输入的数字",
+          "bsonType": "array",
+          "items": {
+            "bsonType": "number"
+          }
+        },
+        "timeStr": {
+          "description": "当前时间",
+          "bsonType": "string"
+        },
+        "birthday": {
+          "description": "用户生日",
+          "bsonType": "string"
+        }
+      }
+    },
+    "result": {
+      "description": "预测结果",
+      "bsonType": "string"
+    },
+    "createTime": {
+      "description": "创建时间",
+      "bsonType": "timestamp"
+    }
+  }
+} 

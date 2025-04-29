@@ -43,7 +43,21 @@
     "setting": {
       "urlCheck": false
     },
-    "usingComponents": true
+    "usingComponents": true,
+    "permission": {
+      "scope.userInfo": {
+        "desc": "用于获取用户信息"
+      }
+    },
+    "requiredPrivateInfos": [
+      "getUserInfo"
+    ],
+    "plugins": {
+      "contact": {
+        "version": "1.0.0",
+        "provider": "wx8abaf00ee8c3202e"
+      }
+    }
   },
   "mp-alipay": {
     "usingComponents": true
