@@ -14,8 +14,23 @@
       <view class="title">问问AI</view>
       <view class="subtitle"></view>
 
+      <!-- 协议勾选框 -->
+      <view class="agreement-checkbox">
+        <view class="checkbox-wrapper" @click="toggleAgreement">
+          <view class="checkbox" :class="{ 'checked': agreedToTerms }">
+            <text v-if="agreedToTerms" class="checkbox-icon">✓</text>
+          </view>
+        </view>
+        <view class="agreement-text">
+          我已阅读并同意
+          <text class="link" @click="showAgreement">《服务协议》</text>
+          和
+          <text class="link" @click="showPrivacy">《免责声明》</text>
+        </view>
+      </view>
+
       <!-- 使用新的授权方式 -->
-      <button class="login-btn" @click="handleGetUserProfile">
+      <button class="login-btn" :class="{ 'disabled': !agreedToTerms }" @click="handleGetUserProfile" :disabled="!agreedToTerms">
         微信一键登录
       </button>
 
@@ -44,15 +59,7 @@
           />
         </view>
 
-        <button class="confirm-btn" @click="confirmUserInfo">确认</button>
-      </view>
-
-      <!-- 添加协议声明文字 -->
-      <view class="agreement-text">
-        登录即代表您同意
-        <text class="link" @click="showAgreement">《服务协议》</text>
-        和
-        <text class="link" @click="showPrivacy">《免责声明》</text>
+        <button class="confirm-btn" @click="confirmUserInfo" :disabled="!agreedToTerms" :class="{ 'disabled': !agreedToTerms }">确认</button>
       </view>
     </view>
     
@@ -65,7 +72,6 @@
         </view>
         <scroll-view class="popup-body" scroll-y="true">
           <view v-if="popupType === 'agreement'" class="content-wrapper">
-            <!-- <view class="popup-subtitle">用户服务协议</view> -->
             <view class="popup-text">
               <view class="popup-item">1. 服务介绍：本服务是一款基于人工智能的数字预测工具，旨在提供娱乐和参考用途。</view>
               <view class="popup-item">2. 账号注册：用户需使用微信登录授权，我们可能获取您的头像和昵称信息用于服务提供。</view>
@@ -77,7 +83,6 @@
             </view>
           </view>
           <view v-else-if="popupType === 'privacy'" class="content-wrapper">
-            <!-- <view class="popup-subtitle">免责声明</view> -->
             <view class="popup-text">
               <view class="popup-item">1. 预测结果仅供娱乐参考：本应用生成的所有预测内容仅供娱乐和参考，不构成任何建议或决策依据。</view>
               <view class="popup-item">2. 不承担决策责任：用户基于本应用内容做出的任何决策所产生的后果，由用户自行承担。</view>
@@ -89,7 +94,7 @@
           </view>
         </scroll-view>
         <view class="popup-footer">
-          <button class="popup-btn" @click="closePopup">我已阅读并同意</button>
+          <button class="popup-btn" @click="agreeAndClose">我已阅读并同意</button>
         </view>
       </view>
     </view>
@@ -113,6 +118,9 @@ const showPopup = ref(false);
 const popupType = ref('');
 const popupTitle = ref('');
 
+// 协议勾选状态
+const agreedToTerms = ref(false);
+
 // 页面加载获取重定向地址
 onLoad((options) => {
   if (options.redirect) {
@@ -120,8 +128,21 @@ onLoad((options) => {
   }
 });
 
+// 切换协议勾选状态
+const toggleAgreement = () => {
+  agreedToTerms.value = !agreedToTerms.value;
+};
+
 // 获取用户信息 - 新API
 const handleGetUserProfile = () => {
+  if (!agreedToTerms.value) {
+    uni.showToast({
+      title: '请先阅读并同意服务协议和免责声明',
+      icon: 'none'
+    });
+    return;
+  }
+  
   // 旧版API，不推荐使用
   if (uni.getUserProfile) {
     uni.getUserProfile({
@@ -155,6 +176,14 @@ const onNicknameChange = (e) => {
 
 // 确认用户信息
 const confirmUserInfo = () => {
+  if (!agreedToTerms.value) {
+    uni.showToast({
+      title: '请先阅读并同意服务协议和免责声明',
+      icon: 'none'
+    });
+    return;
+  }
+  
   if (!nickName.value) {
     uni.showToast({
       title: '请输入昵称',
@@ -277,13 +306,19 @@ const showPrivacy = () => {
 const closePopup = () => {
   showPopup.value = false;
 };
+
+// 同意并关闭弹窗
+const agreeAndClose = () => {
+  agreedToTerms.value = true;
+  showPopup.value = false;
+};
 </script>
 
 <style>
 .container {
   height: 100vh;
   overflow: hidden;
-box-sizing: border-box;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -296,7 +331,7 @@ box-sizing: border-box;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 40rpx;
-  padding: 80rpx 60rpx;
+  padding: 60rpx 50rpx;
   text-align: center;
   box-shadow: 0 16rpx 64rpx rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -320,19 +355,62 @@ box-sizing: border-box;
   margin-bottom: 40rpx;
 }
 
+/* 协议勾选样式 */
+.agreement-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20rpx 0 40rpx;
+}
+
+.checkbox-wrapper {
+  padding: 6rpx;
+}
+
+.checkbox {
+  width: 28rpx;
+  height: 28rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+  border-radius: 6rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10rpx;
+  transition: all 0.2s ease;
+}
+
+.checkbox.checked {
+  background: #56ccf2;
+  border-color: #56ccf2;
+}
+
+.checkbox-icon {
+  color: white;
+  font-size: 20rpx;
+  font-weight: bold;
+}
+
 .login-btn {
   background: linear-gradient(45deg, #2979ff, #56ccf2);
   border: none;
   color: white;
-  padding: 12rpx 0;
+  padding: 20rpx 0;
   width: 90%;
-  font-size: 34rpx;
+  font-size: 32rpx;
   border-radius: 40rpx;
   margin: 40rpx auto;
   box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
+  letter-spacing: 2rpx;
+  transition: all 0.3s ease;
+}
+
+.login-btn.disabled {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+  box-shadow: none;
 }
 
 .profile-area {
@@ -352,16 +430,16 @@ box-sizing: border-box;
 }
 
 .avatar-preview {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 60rpx;
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 55rpx;
   margin-bottom: 10rpx;
   border: 4rpx solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
 }
 
 .avatar-text {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: rgba(255, 255, 255, 0.7);
 }
 
@@ -404,10 +482,15 @@ box-sizing: border-box;
   box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.2);
 }
 
+.confirm-btn.disabled {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+  box-shadow: none;
+}
+
 .agreement-text {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: rgba(255, 255, 255, 0.6);
-  margin-top: 40rpx;
   line-height: 1.5;
 }
 
@@ -554,7 +637,7 @@ box-sizing: border-box;
 }
 
 .popup-header {
-  padding: 30rpx;
+  padding: 26rpx 30rpx;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: space-between;
@@ -562,13 +645,13 @@ box-sizing: border-box;
 }
 
 .popup-title {
-  font-size: 36rpx;
+  font-size: 34rpx;
   font-weight: bold;
   color: #fff;
 }
 
 .popup-close {
-  font-size: 48rpx;
+  font-size: 44rpx;
   color: rgba(255, 255, 255, 0.8);
   line-height: 1;
 }
@@ -577,15 +660,9 @@ box-sizing: border-box;
   max-height: 60vh;
   box-sizing: border-box;
 }
-.popup-body  .content-wrapper {
-  padding: 30rpx;
-}
 
-.popup-subtitle {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #56ccf2;
-  margin-bottom: 20rpx;
+.popup-body .content-wrapper {
+  padding: 30rpx;
 }
 
 .popup-text {
