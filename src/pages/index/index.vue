@@ -69,7 +69,7 @@
     ></view>
 
     <view class="header">
-      <text class="title">答案之数</text>
+      <text class="title">数字知识助手</text>
       <text class="subtitle">✨ 抛出硬币的时候，希望你找到答案 ✨</text>
     </view>
 
@@ -227,7 +227,7 @@ onShareAppMessage(() => {
   isSharing.value = true;
 
   return {
-    title: '答案之数',
+    title: '数字知识助手',
     path: '/pages/index/index',
     imageUrl: '/static/logo.png',
     success: function () {
