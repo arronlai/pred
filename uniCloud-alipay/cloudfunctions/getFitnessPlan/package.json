@@ -1,0 +1,12 @@
+{
+  "name": "getFitnessPlan",
+  "version": "1.0.0",
+  "description": "获取健身计划云函数",
+  "main": "index.js",
+  "dependencies": {
+    "uni-config-center": "file:../../../src/uni_modules/uni-config-center/uniCloud/cloudfunctions/common/uni-config-center"
+  },
+  "extensions": {
+    "uni-cloud-jql": {}
+  }
+} 

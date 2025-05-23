@@ -1,489 +1,532 @@
 <template>
-  <view class="container">
-    <feedback-btn></feedback-btn>
-
-    <view class="stars"></view>
-    <view class="stars2"></view>
-    <view class="stars3"></view>
-    <view class="shooting-star" style="--delay: 0; --top: 30%; --left: 80%; --size: 1.5; --brightness: 1"></view>
-    <view class="shooting-star" style="--delay: 2.5; --top: 15%; --left: 70%; --size: 1.2; --brightness: 0.9"></view>
-    <view class="shooting-star" style="--delay: 5.7; --top: 45%; --left: 90%; --size: 1.8; --brightness: 0.8"></view>
-    <view class="shooting-star" style="--delay: 8.3; --top: 10%; --left: 60%; --size: 1.4; --brightness: 1.1"></view>
-    <view class="shooting-star" style="--delay: 12.1; --top: 60%; --left: 75%; --size: 2; --brightness: 0.7"></view>
-    <view class="shooting-star" style="--delay: 15.5; --top: 25%; --left: 85%; --size: 1.3; --brightness: 1.2"></view>
-
-    <view class="result-card">
-      <h3 class="section-title">{{ currentTitle }}</h3>
-      <view class="result-content">
-        <rich-text :nodes="currentPageContent"></rich-text>
-      </view>
-    </view>
-
-    <view class="button-container">
-      <view class="button-group">
-        <button
-          class="nav-btn prev-btn"
-          @click="prevPage"
-          :disabled="currentPage === 0"
-        >
-          上一页
-        </button>
-        <button class="back-btn" @click="goHome">重新预测</button>
-        <button
-          class="nav-btn next-btn"
-          @click="nextPage"
-          :disabled="currentPage === totalPages - 1"
-        >
-          下一页
-        </button>
-      </view>
-    </view>
-  </view>
+	<view class="container">
+		<view class="header">
+			<text class="title">您的专属健身计划</text>
+			<text class="subtitle">根据您的需求定制</text>
+		</view>
+		
+		<view class="plan-container" v-if="!isLoading && plan">
+			<view class="section">
+				<view class="section-title">
+					<text class="icon">💪</text>
+					<text>训练计划</text>
+				</view>
+				<view class="weekly-plan">
+					<view class="day-plan" v-for="(day, index) in weeklyPlan" :key="index">
+						<view class="day-header">
+							<text class="day-title">{{ day.day }}</text>
+							<text class="day-focus">{{ day.focus }}</text>
+						</view>
+						<view class="exercises">
+							<view class="exercise" v-for="(exercise, eIndex) in day.exercises" :key="eIndex">
+								<text class="exercise-name">{{ exercise.name }}</text>
+								<view class="exercise-details">
+									<text class="detail-item">{{ exercise.sets }}组 × {{ exercise.reps }}次</text>
+									<text class="detail-item">休息{{ exercise.restTime }}秒</text>
+									<text class="detail-item">目标：{{ exercise.targetMuscle }}</text>
+								</view>
+								<text class="exercise-notes">{{ exercise.notes }}</text>
+							</view>
+						</view>
+						<view class="day-footer">
+							<text class="duration">训练时长：{{ day.duration }}</text>
+							<text class="notes">注意事项：{{ day.notes }}</text>
+						</view>
+					</view>
+				</view>
+			</view>
+			
+			<view class="section">
+				<view class="section-title">
+					<text class="icon">🥗</text>
+					<text>营养建议</text>
+				</view>
+				<view class="nutrition-info">
+					<view class="nutrition-item">
+						<text class="nutrition-label">每日卡路里</text>
+						<text class="nutrition-value">{{ nutritionAdvice.dailyCalories }}</text>
+					</view>
+					<view class="nutrition-item">
+						<text class="nutrition-label">蛋白质</text>
+						<text class="nutrition-value">{{ nutritionAdvice.protein }}</text>
+					</view>
+					<view class="nutrition-item">
+						<text class="nutrition-label">碳水化合物</text>
+						<text class="nutrition-value">{{ nutritionAdvice.carbs }}</text>
+					</view>
+					<view class="nutrition-item">
+						<text class="nutrition-label">脂肪</text>
+						<text class="nutrition-value">{{ nutritionAdvice.fats }}</text>
+					</view>
+				</view>
+				<view class="diet-tips">
+					<text class="tips-title">具体饮食建议</text>
+					<view class="tip-item" v-for="(tip, index) in nutritionAdvice.dietTips" :key="index">
+						<text class="tip-dot">•</text>
+						<text class="tip-text">{{ tip }}</text>
+					</view>
+				</view>
+			</view>
+			
+			<view class="section">
+				<view class="section-title">
+					<text class="icon">💤</text>
+					<text>恢复建议</text>
+				</view>
+				<view class="recovery-tips">
+					<view class="tip-group">
+						<text class="group-title">休息时间安排</text>
+						<view class="tip-item" v-for="(tip, index) in recoveryTips.restSchedule" :key="index">
+							<text class="tip-dot">•</text>
+							<text class="tip-text">{{ tip }}</text>
+						</view>
+					</view>
+					<view class="tip-group">
+						<text class="group-title">拉伸建议</text>
+						<view class="tip-item" v-for="(tip, index) in recoveryTips.stretching" :key="index">
+							<text class="tip-dot">•</text>
+							<text class="tip-text">{{ tip }}</text>
+						</view>
+					</view>
+					<view class="tip-group">
+						<text class="group-title">注意事项</text>
+						<view class="tip-item" v-for="(tip, index) in recoveryTips.notes" :key="index">
+							<text class="tip-dot">•</text>
+							<text class="tip-text">{{ tip }}</text>
+						</view>
+					</view>
+				</view>
+			</view>
+		</view>
+		
+		<view class="loading" v-if="isLoading">
+			<view class="loading-spinner"></view>
+			<text>加载中...</text>
+		</view>
+		
+		<view class="error" v-if="!isLoading && !plan">
+			<text>加载失败，请重试</text>
+		</view>
+		
+		<view class="action-buttons">
+			<button class="share-btn" @click="sharePlan">分享计划</button>
+			<button class="save-btn" @click="savePlan">保存计划</button>
+		</view>
+	</view>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
-
-const prediction = ref('');
-const currentPage = ref(0);
-
-// 将内容分成三部分：预测结果、具体建议、分析过程
-const contentParts = computed(() => {
-  if (!prediction.value) return ['', '', ''];
-
-  // 尝试解析JSON格式
-  let content = prediction.value;
-  try {
-    if (typeof content === 'string') {
-      const parsed = JSON.parse(content);
-      if (parsed && typeof parsed === 'object') {
-        content = parsed.content || parsed.result || parsed.data || content;
-      }
-    }
-  } catch (e) {
-    // 如果不是JSON格式，继续使用原始内容
-    console.log('内容不是JSON格式，使用原始内容');
-  }
-
-  content = content.trim();
-
-  let resultPart = '';
-  let advicePart = '';
-  let analysisPart = '';
-
-  // 尝试多种分隔符格式
-  const resultRegex =
-    /(?:===预测结果===|### 预测结果|预测结果：?)\s*\n([\s\S]*?)(?====具体建议===|### 具体建议|具体建议：?|$)/i;
-  const adviceRegex =
-    /(?:===具体建议===|### 具体建议|具体建议：?)\s*\n([\s\S]*?)(?====分析过程===|### 分析过程|分析过程：?|$)/i;
-  const analysisRegex =
-    /(?:===分析过程===|### 分析过程|分析过程：?)\s*\n([\s\S]*?)$/i;
-
-  const resultMatch = content.match(resultRegex);
-  const adviceMatch = content.match(adviceRegex);
-  const analysisMatch = content.match(analysisRegex);
-
-  if (resultMatch && resultMatch[1]) {
-    resultPart = resultMatch[1].trim();
-  }
-  if (adviceMatch && adviceMatch[1]) {
-    advicePart = adviceMatch[1].trim();
-  }
-  if (analysisMatch && analysisMatch[1]) {
-    analysisPart = analysisMatch[1].trim();
-  }
-
-  // 如果无法按预期格式分割，尝试其他方式
-  if (!resultPart && !advicePart && !analysisPart) {
-    console.warn('无法按预期格式分割内容，尝试其他方式解析');
-
-    // 尝试按段落分割
-    const paragraphs = content.split('\n\n');
-    if (paragraphs.length >= 3) {
-      resultPart = paragraphs[0];
-      advicePart = paragraphs[1];
-      analysisPart = paragraphs.slice(2).join('\n\n');
-    } else {
-      // 如果还是无法分割，将所有内容显示为预测结果
-      console.warn('无法分割内容，将所有内容显示为预测结果');
-      resultPart = content;
-    }
-  }
-
-  return [resultPart, advicePart, analysisPart];
-});
-
-// 计算总页数
-const totalPages = computed(() => {
-  return contentParts.value.filter((part) => part.trim() !== '').length;
-});
-
-// 当前页标题
-const currentTitle = computed(() => {
-  const titles = ['预测结果', '行动建议', '分析过程'];
-  return titles[currentPage.value];
-});
-
-// 当前页内容 (移除标题和 page-content wrapper)
-const currentPageContent = computed(() => {
-  if (!prediction.value) return '';
-
-  const parts = contentParts.value;
-
-  // 如果当前页没有内容，返回空字符串
-  if (currentPage.value >= parts.length || !parts[currentPage.value].trim()) {
-    return '';
-  }
-
-  // 格式化当前页内容
-  const content = parts[currentPage.value]
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // 加粗
-    .replace(/\n\n/g, '</p><p>') // 段落
-    .replace(/^/, '<p>') // Add opening p tag at the start
-    .replace(/$/, '</p>') // Add closing p tag at the end
-    .replace(/\n/g, '<br>') // 换行
-    .replace(/\d+\.\s/g, '<br>$&') // 列表项
-    .replace(/\s-\s/g, '<br>• ') // 破折号列表
-    .replace(/\s{2,}/g, ' '); // 多余空格
-
-  // 只返回 P 标签包裹的内容 HTML
-  return content;
-});
-
-// 格式化内容为HTML
-const formattedPrediction = computed(() => {
-  if (!prediction.value) return '';
-
-  // 将markdown格式转换为HTML
-  return prediction.value
-    .replace(/### (.*?)\n/g, '<h3 class="section-title">$1</h3>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
-});
-
-// 上一页
-const prevPage = () => {
-  if (currentPage.value > 0) {
-    currentPage.value--;
-  }
-};
-
-// 下一页
-const nextPage = () => {
-  if (currentPage.value < totalPages.value - 1) {
-    currentPage.value++;
-  }
-};
-
-// 使用 uni-app 的生命周期钩子
-onLoad((options) => {
-  if (options.prediction) {
-    try {
-      // 尝试解析JSON格式
-      const data = JSON.parse(decodeURIComponent(options.prediction));
-      // 如果是对象格式且有content字段，使用content字段
-      if (data && typeof data === 'object' && data.content) {
-        prediction.value = data.content;
-      } else if (data && typeof data === 'object' && data.result) {
-        // 兼容历史记录中的result字段
-        prediction.value = data.result;
-      } else {
-        // 否则使用整个字符串
-        prediction.value = decodeURIComponent(options.prediction);
-      }
-    } catch (e) {
-      // 如果不是JSON格式，直接使用原始字符串
-      prediction.value = decodeURIComponent(options.prediction);
-    }
-  }
-});
-
-const goHome = () => {
-  uni.navigateTo({
-    url: '/pages/index/index',
-  });
-};
+<script>
+export default {
+	data() {
+		return {
+			plan: null,
+			planId: '',
+			isLoading: true
+		}
+	},
+	computed: {
+		weeklyPlan() {
+			if (!this.plan?.workoutPlan?.weeklyPlan) return [];
+			return this.plan.workoutPlan.weeklyPlan;
+		},
+		nutritionAdvice() {
+			if (!this.plan?.nutritionAdvice) return {};
+			return this.plan.nutritionAdvice;
+		},
+		recoveryTips() {
+			if (!this.plan?.recoveryTips) return {};
+			return this.plan.recoveryTips;
+		}
+	},
+	onLoad(options) {
+		console.log('Result page options:', options);
+		if (options.planId) {
+			this.planId = options.planId;
+			this.loadPlan();
+		} else {
+			this.isLoading = false;
+			uni.showToast({
+				title: '计划ID不存在',
+				icon: 'none'
+			});
+		}
+	},
+	methods: {
+		async loadPlan() {
+			try {
+				const result = await uniCloud.callFunction({
+					name: 'getFitnessPlan',
+					data: {
+						planId: this.planId
+					}
+				});
+				
+				if (result.result.code === 0) {
+					this.plan = result.result.data;
+				} else {
+					throw new Error(result.result.message);
+				}
+			} catch (error) {
+				uni.showToast({
+					title: error.message || '加载计划失败',
+					icon: 'none'
+				});
+			} finally {
+				this.isLoading = false;
+			}
+		},
+		sharePlan() {
+			uni.showShareMenu({
+				withShareTicket: true,
+				menus: ['shareAppMessage', 'shareTimeline']
+			});
+		},
+		async savePlan() {
+			try {
+				uni.showLoading({
+					title: '保存中...'
+				});
+				
+				const result = await uniCloud.callFunction({
+					name: 'saveFitnessPlan',
+					data: {
+						planId: this.planId
+					}
+				});
+				
+				if (result.result.code === 0) {
+					uni.showToast({
+						title: '保存成功',
+						icon: 'success'
+					});
+				} else {
+					throw new Error(result.result.message);
+				}
+			} catch (error) {
+				uni.showToast({
+					title: error.message || '保存失败',
+					icon: 'none'
+				});
+			} finally {
+				uni.hideLoading();
+			}
+		}
+	}
+}
 </script>
 
-<style>
+<style lang="scss">
 .container {
-  height: 100vh;
-  overflow: hidden;
-box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
-  position: relative;
-  padding: 40rpx 30rpx 0; /* 替换为rpx */
-  overflow: hidden; /* Hide overflowing stars */
+	min-height: 100vh;
+	background-color: #f5f5f5;
+	padding-bottom: 120rpx;
 }
 
-.result-card {
-  flex: 1;
-  max-width: 1200rpx; /* 替换为rpx */
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 40rpx; /* 替换为rpx */
-  padding: 40rpx; /* 替换为rpx */
-  margin: 0 auto 200rpx; /* 替换为rpx */
-  box-shadow: 0 16rpx 64rpx rgba(0, 0, 0, 0.2); /* 替换为rpx */
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 1; /* Ensure card is above stars */
+.header {
+	padding: 40rpx 30rpx;
+	background: linear-gradient(135deg, #4CAF50, #45a049);
+	color: #ffffff;
+	text-align: center;
+	
+	.title {
+		font-size: 40rpx;
+		font-weight: bold;
+		margin-bottom: 16rpx;
+		display: block;
+	}
+	
+	.subtitle {
+		font-size: 28rpx;
+		opacity: 0.9;
+	}
 }
 
-.section-title {
-  color: #fff;
-  font-size: 44rpx; /* 替换为rpx */
-  font-weight: bold;
-  margin: 0 0 40rpx; /* 替换为rpx */
-  padding: 20rpx 0; /* 替换为rpx */
-  text-shadow: 0 0 20rpx rgba(255, 255, 255, 0.3); /* 替换为rpx */
-  text-align: center;
-  flex-shrink: 0;
+.plan-container {
+	padding: 30rpx;
 }
 
-.result-content {
-  flex: 1;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 32rpx; /* 替换为rpx */
-  line-height: 1.8;
-  overflow-y: auto;
-  padding: 0 10rpx; /* 替换为rpx */
+.section {
+	background-color: #ffffff;
+	border-radius: 20rpx;
+	padding: 30rpx;
+	margin-bottom: 30rpx;
+	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+	
+	.section-title {
+		display: flex;
+		align-items: center;
+		margin-bottom: 30rpx;
+		
+		.icon {
+			font-size: 40rpx;
+			margin-right: 20rpx;
+		}
+		
+		text {
+			font-size: 32rpx;
+			font-weight: bold;
+			color: #333;
+		}
+	}
 }
 
-.result-content p {
-  margin-bottom: 20rpx; /* 替换为rpx */
+.weekly-plan {
+	.day-plan {
+		margin-bottom: 40rpx;
+		
+		&:last-child {
+			margin-bottom: 0;
+		}
+		
+		.day-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 24rpx;
+			
+			.day-title {
+				font-size: 30rpx;
+				font-weight: bold;
+				color: #333;
+			}
+			
+			.day-focus {
+				font-size: 26rpx;
+				color: #666;
+				background-color: #f0f0f0;
+				padding: 8rpx 24rpx;
+				border-radius: 20rpx;
+			}
+		}
+		
+		.exercises {
+			.exercise {
+				background-color: #f8f8f8;
+				padding: 24rpx;
+				border-radius: 12rpx;
+				margin-bottom: 16rpx;
+				
+				&:last-child {
+					margin-bottom: 0;
+				}
+				
+				.exercise-name {
+					font-size: 28rpx;
+					font-weight: bold;
+					color: #333;
+					margin-bottom: 12rpx;
+					display: block;
+				}
+				
+				.exercise-details {
+					display: flex;
+					flex-wrap: wrap;
+					gap: 16rpx;
+					margin: 12rpx 0;
+					
+					.detail-item {
+						font-size: 26rpx;
+						color: #666;
+						background-color: #f0f0f0;
+						padding: 4rpx 16rpx;
+						border-radius: 8rpx;
+					}
+				}
+				
+				.exercise-notes {
+					font-size: 26rpx;
+					color: #999;
+					line-height: 1.5;
+				}
+			}
+		}
+		
+		.day-footer {
+			margin-top: 20rpx;
+			padding-top: 20rpx;
+			border-top: 2rpx solid #f0f0f0;
+			
+			.duration, .notes {
+				font-size: 26rpx;
+				color: #666;
+				display: block;
+				margin-bottom: 8rpx;
+				
+				&:last-child {
+					margin-bottom: 0;
+				}
+			}
+		}
+	}
 }
 
-.result-content strong {
-  color: #fff;
-  font-weight: bold;
+.nutrition-info {
+	.nutrition-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 24rpx 0;
+		border-bottom: 2rpx solid #f0f0f0;
+		
+		&:last-child {
+			border-bottom: none;
+		}
+		
+		.nutrition-label {
+			font-size: 28rpx;
+			color: #333;
+		}
+		
+		.nutrition-value {
+			font-size: 28rpx;
+			color: #4CAF50;
+			font-weight: bold;
+		}
+	}
 }
 
-/*
-.result-content br {
-	margin: 6px 0;
-}
-*/
-
-.button-container {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 40rpx; /* 替换为rpx */
-  z-index: 10;
-  background: linear-gradient(to top, rgba(11, 19, 30, 0.9), rgba(11, 19, 30, 0.7), transparent);
-  backdrop-filter: blur(5px);
-}
-
-.button-group {
-  display: flex;
-  justify-content: space-between;
-  max-width: 1200rpx; /* 替换为rpx */
-  margin: 0 auto;
-}
-
-.nav-btn,
-.back-btn {
-  width: 190rpx;
-  height: 84rpx;
-  border-radius: 80rpx;
-  color: white;
-  font-size: 28rpx;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+.diet-tips {
+	margin-top: 40rpx;
+	padding-top: 30rpx;
+	border-top: 2rpx solid #f0f0f0;
+	
+	.tips-title {
+		font-size: 30rpx;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 24rpx;
+		display: block;
+	}
+	
+	.tip-item {
+		display: flex;
+		align-items: flex-start;
+		margin-bottom: 20rpx;
+		
+		&:last-child {
+			margin-bottom: 0;
+		}
+		
+		.tip-dot {
+			color: #4CAF50;
+			margin-right: 12rpx;
+			font-size: 32rpx;
+		}
+		
+		.tip-text {
+			font-size: 28rpx;
+			color: #666;
+			line-height: 1.5;
+		}
+	}
 }
 
-.nav-btn {
-  background: transparent;
-  border: 1px solid #56ccf2;
-  color: #56ccf2;
-  box-shadow: none;
+.recovery-tips {
+	.tip-group {
+		margin-bottom: 40rpx;
+		
+		&:last-child {
+			margin-bottom: 0;
+		}
+		
+		.group-title {
+			font-size: 30rpx;
+			font-weight: bold;
+			color: #333;
+			margin-bottom: 24rpx;
+			display: block;
+		}
+		
+		.tip-item {
+			display: flex;
+			align-items: flex-start;
+			margin-bottom: 20rpx;
+			
+			&:last-child {
+				margin-bottom: 0;
+			}
+			
+			.tip-dot {
+				color: #4CAF50;
+				margin-right: 12rpx;
+				font-size: 32rpx;
+			}
+			
+			.tip-text {
+				font-size: 28rpx;
+				color: #666;
+				line-height: 1.5;
+			}
+		}
+	}
 }
 
-.back-btn {
-  background: linear-gradient(45deg, #2979ff, #56ccf2);
-  border: none;
-  box-shadow: 0 0 15px rgba(41, 121, 255, 0.6);
+.loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 100rpx 0;
+	
+	.loading-spinner {
+		width: 60rpx;
+		height: 60rpx;
+		border: 6rpx solid #4CAF50;
+		border-top-color: transparent;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin-bottom: 24rpx;
+	}
+	
+	text {
+		color: #666;
+		font-size: 28rpx;
+	}
 }
 
-.nav-btn[disabled] {
-  background: transparent;
-  border-color: rgba(100, 100, 100, 0.5);
-  color: rgba(100, 100, 100, 0.5);
-  box-shadow: none;
-  opacity: 0.7;
+.error {
+	text-align: center;
+	padding: 100rpx 0;
+	color: #ff4d4f;
+	font-size: 28rpx;
 }
 
-.nav-btn:active {
-  background: rgba(86, 204, 242, 0.1);
-  transform: scale(0.95);
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
 }
 
-.back-btn:active {
-  transform: scale(0.95);
-}
-
-/* Remove .page-content style */
-/*
-.page-content {
-	padding: 0 10px;
-}
-*/
-
-/* 自定义滚动条样式 */
-.result-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.result-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
-
-.result-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-}
-
-.result-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-/* Star Styles from index.vue */
-.stars {
-  width: 4rpx; /* 替换为rpx */
-  height: 4rpx; /* 替换为rpx */
-  background: transparent;
-  box-shadow: 
-    3608rpx 2530rpx #FFF, 730rpx 664rpx #FFF, 172rpx 3776rpx #FFF, 3776rpx 968rpx #FFF,
-    398rpx 2978rpx #FFF, 2918rpx 2020rpx #FFF, 1614rpx 776rpx #FFF, 1710rpx 1116rpx #FFF,
-    166rpx 2190rpx #FFF, 2836rpx 754rpx #FFF, 1354rpx 1772rpx #FFF, 1724rpx 3418rpx #FFF;
-  animation: animStar 50s linear infinite;
-  opacity: 0.8;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.stars:after {
-  content: " ";
-  position: absolute;
-  top: 4000rpx; /* 替换为rpx */
-  width: 4rpx; /* 替换为rpx */
-  height: 4rpx; /* 替换为rpx */
-  background: transparent;
-  box-shadow: 
-    3608rpx 2530rpx #FFF, 730rpx 664rpx #FFF, 172rpx 3776rpx #FFF, 3776rpx 968rpx #FFF,
-    398rpx 2978rpx #FFF, 2918rpx 2020rpx #FFF, 1614rpx 776rpx #FFF, 1710rpx 1116rpx #FFF,
-    166rpx 2190rpx #FFF, 2836rpx 754rpx #FFF, 1354rpx 1772rpx #FFF, 1724rpx 3418rpx #FFF;
-}
-
-.stars2 {
-  width: 6rpx; /* 替换为rpx */
-  height: 6rpx; /* 替换为rpx */
-  background: transparent;
-  box-shadow: 
-    3628rpx 2550rpx #FFF, 750rpx 684rpx #FFF, 192rpx 3796rpx #FFF, 3796rpx 988rpx #FFF,
-    3168rpx 930rpx #FFF, 1730rpx 1864rpx #FFF, 1372rpx 3776rpx #FFF, 2576rpx 968rpx #FFF;
-  animation: animStar 100s linear infinite;
-  opacity: 0.9;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.stars2:after {
-  content: " ";
-  position: absolute;
-  top: 4000rpx; /* 替换为rpx */
-  width: 6rpx; /* 替换为rpx */
-  height: 6rpx; /* 替换为rpx */
-  background: transparent;
-  box-shadow: 
-    3628rpx 2550rpx #FFF, 750rpx 684rpx #FFF, 192rpx 3796rpx #FFF, 3796rpx 988rpx #FFF,
-    3168rpx 930rpx #FFF, 1730rpx 1864rpx #FFF, 1372rpx 3776rpx #FFF, 2576rpx 968rpx #FFF;
-}
-
-.stars3 {
-  width: 8rpx; /* 替换为rpx */
-  height: 8rpx; /* 替换为rpx */
-  background: transparent;
-  box-shadow: 
-    3648rpx 2570rpx #FFF, 770rpx 704rpx #FFF, 212rpx 3816rpx #FFF, 3816rpx 1008rpx #FFF;
-  animation: animStar 150s linear infinite;
-  opacity: 1;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.stars3:after {
-  content: " ";
-  position: absolute;
-  top: 4000rpx; /* 替换为rpx */
-  width: 8rpx; /* 替换为rpx */
-  height: 8rpx; /* 替换为rpx */
-  background: transparent;
-  box-shadow: 
-    3648rpx 2570rpx #FFF, 770rpx 704rpx #FFF, 212rpx 3816rpx #FFF, 3816rpx 1008rpx #FFF;
-}
-
-@keyframes animStar {
-  from {
-    transform: translateY(0rpx); /* 替换为rpx */
-  }
-  to {
-    transform: translateY(-4000rpx); /* 替换为rpx */
-  }
-}
-
-/* Shooting Star Styles */
-.shooting-star {
-  position: absolute;
-  top: var(--top, 50%);
-  left: var(--left, 80%);
-  width: calc(240rpx * var(--size, 1)); /* 替换为rpx */
-  height: calc(6rpx * var(--size, 1)); /* 替换为rpx */
-  background: linear-gradient(90deg, rgba(255, 255, 255, var(--brightness, 1)), transparent);
-  animation: shootingStar 8s infinite;
-  animation-delay: calc(var(--delay) * 1s);
-  opacity: 0;
-  z-index: 2;
-  filter: blur(calc(2rpx * var(--size, 1))); /* 替换为rpx */
-}
-
-@keyframes shootingStar {
-  0% {
-    transform: translate(0, 0) rotate(-45deg) scale(0);
-    opacity: 0;
-  }
-  2% {
-    transform: translate(-40rpx, 40rpx) rotate(-45deg) scale(var(--size, 1)); /* 替换为rpx */
-    opacity: var(--brightness, 1);
-  }
-  8% {
-    transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1)); /* 替换为rpx */
-    opacity: 0;
-  }
-  100% {
-    transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1)); /* 替换为rpx */
-    opacity: 0;
-  }
+.action-buttons {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	padding: 24rpx 30rpx;
+	background-color: #ffffff;
+	box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+	display: flex;
+	gap: 24rpx;
+	
+	button {
+		flex: 1;
+		height: 88rpx;
+		line-height: 88rpx;
+		font-size: 32rpx;
+		border-radius: 44rpx;
+		
+		&.share-btn {
+			background-color: #4CAF50;
+			color: #ffffff;
+		}
+		
+		&.save-btn {
+			background-color: #f0f0f0;
+			color: #333;
+		}
+	}
 }
 </style>

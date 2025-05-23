@@ -1,0 +1,104 @@
+{
+	"bsonType": "object",
+	"required": ["userId", "userInfo", "workoutPlan", "nutritionAdvice", "recoveryTips", "createdAt", "status"],
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": false
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"userId": {
+			"bsonType": "string",
+			"description": "用户ID"
+		},
+		"userInfo": {
+			"bsonType": "object",
+			"required": ["height", "weight", "age", "gender", "fitnessGoal", "injuries", "venue", "isBodyweight", "planDuration", "bmi"],
+			"properties": {
+				"height": {
+					"bsonType": "number",
+					"description": "身高(cm)"
+				},
+				"weight": {
+					"bsonType": "number",
+					"description": "体重(kg)"
+				},
+				"age": {
+					"bsonType": "number",
+					"description": "年龄"
+				},
+				"gender": {
+					"bsonType": "string",
+					"enum": ["male", "female"],
+					"description": "性别"
+				},
+				"fitnessGoal": {
+					"bsonType": "string",
+					"description": "健身目标"
+				},
+				"injuries": {
+					"bsonType": "array",
+					"description": "身体损伤情况",
+					"items": {
+						"bsonType": "string"
+					}
+				},
+				"venue": {
+					"bsonType": "string",
+					"description": "运动场地"
+				},
+				"isBodyweight": {
+					"bsonType": "bool",
+					"description": "是否徒手健身"
+				},
+				"planDuration": {
+					"bsonType": "string",
+					"description": "计划周期"
+				},
+				"bmi": {
+					"bsonType": "number",
+					"description": "BMI指数"
+				}
+			}
+		},
+		"workoutPlan": {
+			"bsonType": "string",
+			"description": "训练计划"
+		},
+		"nutritionAdvice": {
+			"bsonType": "string",
+			"description": "营养建议"
+		},
+		"recoveryTips": {
+			"bsonType": "string",
+			"description": "恢复建议"
+		},
+		"createdAt": {
+			"bsonType": "timestamp",
+			"description": "创建时间"
+		},
+		"status": {
+			"bsonType": "string",
+			"enum": ["active", "saved", "archived"],
+			"description": "计划状态"
+		},
+		"aiResponse": {
+			"bsonType": "object",
+			"description": "AI接口原始响应",
+			"properties": {
+				"content": {
+					"bsonType": "string",
+					"description": "AI返回的原始内容"
+				},
+				"timestamp": {
+					"bsonType": "timestamp",
+					"description": "响应时间"
+				}
+			}
+		}
+	}
+} 
