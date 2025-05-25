@@ -15,6 +15,7 @@ config/config.local.js
 credentials.json
 service-account.json
 **/deepseek-config/config.json
+**/mp-config/config.json
 
 # 依赖
 node_modules/
