@@ -82,9 +82,9 @@
 					<view class="radio-group">
 						<text class="radio-label required">运动器械</text>
 						<radio-group @change="handleEquipmentChange">
-							<label class="radio-item" v-for="(equipment, index) in equipments" :key="index">
-								<radio :value="equipment.value" :checked="formData.equipment === equipment.value" color="#4CAF50" />
-								<text>{{ equipment.label }}</text>
+							<label class="radio-item" v-for="(venue, index) in venues" :key="index">
+								<radio :value="venue.value" :checked="formData.venue === venue.value" color="#4CAF50" />
+								<text>{{ venue.label }}</text>
 							</label>
 						</radio-group>
 					</view>
@@ -114,6 +114,15 @@
 				</button>
 			</view>
 		</view>
+		
+		<!-- 加载遮罩 -->
+		<view class="loading-mask" v-if="isGenerating">
+			<view class="loading-content">
+				<view class="loading-spinner"></view>
+				<text class="loading-text">正在生成您的专属健身计划...</text>
+				<text class="loading-tips">这可能需要一点时间，请耐心等待</text>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -135,7 +144,8 @@ export default {
 				experience: 'beginner',
 				injuries: [],
 				fitnessGoal: 'weight_loss',
-				equipment: 'gym',
+				venue: 'gym',
+				isBodyweight: false,
 				planDuration: 'month'
 			},
 			fitnessGoals: ['减脂', '增肌', '保持健康', '提高力量', '改善体态'],
@@ -151,7 +161,7 @@ export default {
 				{ label: '肩部', value: 'shoulder' },
 				{ label: '手腕', value: 'wrist' }
 			],
-			equipments: [
+			venues: [
 				{ label: '器械丰富（健身房）', value: 'gym' },
 				{ label: '少量器械（居家）', value: 'home' },
 				{ label: '徒手健身', value: 'bodyweight' }
@@ -161,7 +171,9 @@ export default {
 				{ label: '三个月', value: 'quarter' },
 				{ label: '半年', value: 'half_year' }
 			],
-			isGenerating: false
+			isGenerating: false,
+			loadingTimer: null,
+			loadingDots: ''
 		}
 	},
 	methods: {
@@ -186,7 +198,9 @@ export default {
 			this.formData.injuries = e.detail.value;
 		},
 		handleEquipmentChange(e) {
-			this.formData.equipment = e.detail.value;
+			const value = e.detail.value;
+			this.formData.venue = value;
+			this.formData.isBodyweight = value === 'bodyweight';
 		},
 		handleDurationChange(e) {
 			this.formData.planDuration = e.detail.value;
@@ -203,7 +217,7 @@ export default {
 		},
 		async generatePlan() {
 			// 检查必填信息
-			const requiredFields = ['height', 'weight', 'age', 'gender', 'fitnessGoal', 'equipment', 'planDuration'];
+			const requiredFields = ['height', 'weight', 'age', 'gender', 'fitnessGoal', 'venue', 'planDuration'];
 			const missingFields = requiredFields.filter(field => !this.formData[field]);
 			
 			if (missingFields.length > 0) {
@@ -223,14 +237,25 @@ export default {
 		async submitPlan() {
 			try {
 				this.isGenerating = true;
+				this.startLoadingAnimation();
 				
-				const result = await uniCloud.callFunction({
-					name: 'generateFitnessPlan',
-					data: {
-						...this.formData,
-						userId: uni.getStorageSync('userId')
-					}
+				// 设置超时处理
+				const timeoutPromise = new Promise((_, reject) => {
+					setTimeout(() => {
+						reject(new Error('请求超时，请稍后重试'));
+					}, 180000); // 180秒超时
 				});
+				
+				const result = await Promise.race([
+					uniCloud.callFunction({
+						name: 'generateFitnessPlan',
+						data: {
+							...this.formData,
+							userId: uni.getStorageSync('userId')
+						}
+					}),
+					timeoutPromise
+				]);
 				
 				if (result.result.code === 0) {
 					uni.navigateTo({
@@ -240,14 +265,32 @@ export default {
 					throw new Error(result.result.message);
 				}
 			} catch (error) {
-				uni.showToast({
-					title: error.message || '生成计划失败',
-					icon: 'none'
+				uni.showModal({
+					title: '生成失败',
+					content: error.message || '生成计划失败，请稍后重试',
+					showCancel: false
 				});
 			} finally {
+				this.stopLoadingAnimation();
 				this.isGenerating = false;
 			}
+		},
+		
+		startLoadingAnimation() {
+			this.loadingTimer = setInterval(() => {
+				this.loadingDots = this.loadingDots.length >= 3 ? '' : this.loadingDots + '.';
+			}, 500);
+		},
+		
+		stopLoadingAnimation() {
+			if (this.loadingTimer) {
+				clearInterval(this.loadingTimer);
+				this.loadingTimer = null;
+			}
 		}
+	},
+	beforeDestroy() {
+		this.stopLoadingAnimation();
 	}
 }
 </script>
@@ -415,6 +458,7 @@ export default {
 	gap: 12rpx;
 	font-size: 30rpx;
 	color: #333;
+	padding: 16rpx 0;
 	
 	text {
 		margin-left: 8rpx;
@@ -495,6 +539,52 @@ export default {
 		border-top-color: transparent;
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
+	}
+	
+	text {
+		font-size: 28rpx;
+		color: #ffffff;
+	}
+}
+
+.loading-mask {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(255, 255, 255, 0.95);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+	
+	.loading-content {
+		text-align: center;
+		padding: 40rpx;
+		
+		.loading-spinner {
+			width: 80rpx;
+			height: 80rpx;
+			border: 6rpx solid #4CAF50;
+			border-top-color: transparent;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+			margin: 0 auto 24rpx;
+		}
+		
+		.loading-text {
+			font-size: 32rpx;
+			color: #333;
+			margin-bottom: 16rpx;
+			display: block;
+		}
+		
+		.loading-tips {
+			font-size: 26rpx;
+			color: #666;
+			display: block;
+		}
 	}
 }
 

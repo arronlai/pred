@@ -7,11 +7,16 @@ const shareConfig = createConfig({
 });
 const Config = shareConfig.config();
 
-const API_KEY = Config.AI_API_KEY;
-const API_URL = Config.AI_API_URL;
+const API_KEY = Config.AI_API_KEY_VIP;
+const API_URL = Config.AI_API_URL_VIP;
 
 // 系统提示词模板
 const SYSTEM_PROMPT = `你是一位专业的健身教练和营养师。请根据用户提供的信息生成个性化的健身计划。
+
+**训练方式说明：**
+1. 徒手训练：只能使用自身体重，不能使用任何器械（包括哑铃、弹力带等）
+2. 居家少量器械：可以使用哑铃、弹力带等简单器械
+3. 健身房：可以使用所有健身房器械
 
 **输出格式要求：**
 请严格按照以下JSON格式输出，不要添加任何其他内容：
@@ -69,7 +74,11 @@ const SYSTEM_PROMPT = `你是一位专业的健身教练和营养师。请根据
 3. 严格按照上述JSON格式输出，不要添加任何其他内容
 4. 每周训练计划必须包含7天的内容
 5. 每个训练动作必须包含完整的属性（name, sets, reps, restTime, targetMuscle, notes）
-6. 所有建议必须具体可行，适合用户的具体情况`;
+6. 所有建议必须具体可行，适合用户的具体情况
+7. 严格遵循用户选择的训练方式：
+   - 徒手训练：只能使用俯卧撑、引体向上、深蹲等自重动作
+   - 居家少量器械：可以使用哑铃、弹力带等简单器械
+   - 健身房：可以使用所有健身房器械`;
 
 const db = uniCloud.database();
 const fitnessPlanCollection = db.collection('fitness_plans');
@@ -77,16 +86,24 @@ const fitnessPlanCollection = db.collection('fitness_plans');
 // 修改解析AI返回内容的逻辑
 const parseAIResponse = (content) => {
 	try {
+		// 清理可能存在的Markdown代码块标记
+		let cleanedContent = content
+			.replace(/```json\s*/g, '')  // 移除开头的 ```json
+			.replace(/```\s*$/g, '')     // 移除结尾的 ```
+			.trim();                     // 移除首尾空白
+		
 		// 尝试直接解析JSON
-		const plan = JSON.parse(content);
+		const plan = JSON.parse(cleanedContent);
 		return plan;
 	} catch (error) {
-		console.error('解析AI响应失败：', error);
+		console.error('解析AI响应失败：', error, '原始内容：', content);
 		throw new Error('健身计划格式错误，请重试');
 	}
 };
 
 exports.main = async (event, context) => {
+	// 设置云函数超时时间为 120 秒
+	
 	const { 
 		height,           // 身高(cm)
 		weight,           // 体重(kg)
@@ -94,7 +111,7 @@ exports.main = async (event, context) => {
 		gender,          // 性别
 		fitnessGoal,     // 健身目标
 		injuries,        // 身体损伤情况
-		venue,           // 运动场地
+		venue,           // 运动场地类型：gym/home/bodyweight
 		isBodyweight,    // 是否徒手健身
 		planDuration,    // 计划周期
 		userId           // 用户ID
@@ -128,10 +145,14 @@ exports.main = async (event, context) => {
 - 性别：${gender === 'male' ? '男' : '女'}
 - BMI：${bmi.toFixed(1)}
 - 健身目标：${fitnessGoal}
-- 身体损伤：${injuries.join(', ') || '无'}
-- 运动场地：${venue}
-- 训练方式：${isBodyweight ? '徒手训练' : '器械训练'}
-- 计划周期：${planDuration}`;
+- 身体损伤：${injuries?.join(', ') || '无'}
+- 训练方式：${venue === 'bodyweight' ? '徒手训练（仅使用自身体重）' : venue === 'gym' ? '健身房（可使用所有器械）' : '居家少量器械（可使用哑铃、弹力带等）'}
+- 计划周期：${planDuration}
+
+请严格按照JSON格式输出，不要添加任何其他内容。特别注意：
+1. 如果是徒手训练，所有动作必须只使用自身体重，不能包含任何需要器械、绳索、弹力带的动作
+2. 如果是居家少量器械，可以使用哑铃、弹力带等简单器械
+3. 如果是健身房，可以使用所有健身房器械`;
 
 		// 调用AI API
 		const response = await fetch(API_URL, {
@@ -151,12 +172,15 @@ exports.main = async (event, context) => {
 						role: "user",
 						content: userContent
 					}
-				]
+				],
+				temperature: 0.7,
+				max_tokens: 2000,
 			})
 		});
 
 		if (!response.ok) {
-			throw new Error(`API request failed with status ${response.status}`);
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(`API请求失败: ${response.status} - ${errorData.error?.message || '未知错误'}`);
 		}
 
 		const data = await response.json();
