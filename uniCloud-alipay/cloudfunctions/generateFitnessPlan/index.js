@@ -88,22 +88,25 @@ const parseAIResponse = (content) => {
 	try {
 		// 清理可能存在的Markdown代码块标记
 		let cleanedContent = content
-			.replace(/```json\s*/g, '')  // 移除开头的 ```json
-			.replace(/```\s*$/g, '')     // 移除结尾的 ```
-			.trim();                     // 移除首尾空白
+			.replace(/```(?:json)?\s*/g, '')  // 移除开头的 ```json 或 ```
+			.replace(/```\s*$/g, '')          // 移除结尾的 ```
+			.replace(/^[\s\S]*?({[\s\S]*})[\s\S]*$/, '$1')  // 提取JSON对象
+			.trim();                          // 移除首尾空白
 		
 		// 尝试直接解析JSON
 		const plan = JSON.parse(cleanedContent);
 		return plan;
 	} catch (error) {
-		console.error('解析AI响应失败：', error, '原始内容：', content);
+		console.error('解析AI响应失败：', {
+			error: error.message,
+			content: content,
+			timestamp: new Date().toISOString()
+		});
 		throw new Error('健身计划格式错误，请重试');
 	}
 };
 
 exports.main = async (event, context) => {
-	// 设置云函数超时时间为 120 秒
-	
 	const { 
 		height,           // 身高(cm)
 		weight,           // 体重(kg)
@@ -114,6 +117,8 @@ exports.main = async (event, context) => {
 		venue,           // 运动场地类型：gym/home/bodyweight
 		isBodyweight,    // 是否徒手健身
 		planDuration,    // 计划周期
+		weeklyDays,      // 每周可健身天数
+		dailyDuration,   // 每天可健身时长
 		userId           // 用户ID
 	} = event;
 
@@ -132,6 +137,8 @@ exports.main = async (event, context) => {
 			venue,
 			isBodyweight,
 			planDuration,
+			weeklyDays,
+			dailyDuration,
 			bmi
 		};
 
@@ -148,11 +155,20 @@ exports.main = async (event, context) => {
 - 身体损伤：${injuries?.join(', ') || '无'}
 - 训练方式：${venue === 'bodyweight' ? '徒手训练（仅使用自身体重）' : venue === 'gym' ? '健身房（可使用所有器械）' : '居家少量器械（可使用哑铃、弹力带等）'}
 - 计划周期：${planDuration}
+- 每周可健身天数：${weeklyDays}天
+- 每天可健身时长：${dailyDuration}分钟
 
 请严格按照JSON格式输出，不要添加任何其他内容。特别注意：
 1. 如果是徒手训练，所有动作必须只使用自身体重，不能包含任何需要器械、绳索、弹力带的动作
 2. 如果是居家少量器械，可以使用哑铃、弹力带等简单器械
-3. 如果是健身房，可以使用所有健身房器械`;
+3. 如果是健身房，可以使用所有健身房器械
+4. 如果是减脂目标，必须包含有氧运动计划，可以包括：
+   - 跑步机/室外跑步
+   - 跳绳
+   - 爬楼机
+   - 骑行
+   - HIIT训练
+5. 训练计划必须符合用户的时间安排（每周${weeklyDays}天，每天${dailyDuration}分钟）`;
 
 		// 调用AI API
 		const response = await fetch(API_URL, {

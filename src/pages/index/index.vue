@@ -6,7 +6,46 @@
 				<text class="title">个性化健身计划</text>
 				<text class="subtitle">根据您的需求定制专属训练方案</text>
 			</view>
+			<view class="user-info" @click="showUserMenu">
+				<image class="avatar" :src="userInfo.avatarUrl || '/static/images/default-avatar.png'" mode="aspectFill"></image>
+			</view>
 		</view>
+		
+		<!-- 用户菜单 -->
+		<uni-popup ref="userMenuPopup" type="bottom">
+			<view class="user-menu">
+				<view class="menu-item" @click="viewHistoryPlans">
+					<text class="menu-icon">📋</text>
+					<text>历史计划</text>
+				</view>
+				<view class="menu-item" @click="handleLogout">
+					<text class="menu-icon">🚪</text>
+					<text>退出登录</text>
+				</view>
+			</view>
+		</uni-popup>
+		
+		<!-- 历史计划列表 -->
+		<uni-popup ref="historyPopup" type="bottom">
+			<view class="history-list">
+				<view class="history-header">
+					<text class="history-title">历史计划</text>
+					<text class="close-btn" @click="closeHistory">×</text>
+				</view>
+				<scroll-view class="history-content" scroll-y>
+					<view v-if="historyPlans.length === 0" class="empty-tip">
+						<text>暂无历史计划</text>
+					</view>
+					<view v-else class="plan-item" v-for="plan in historyPlans" :key="plan._id" @click="viewPlan(plan._id)">
+						<view class="plan-info">
+							<text class="plan-date">{{ formatDate(plan.createdAt) }}</text>
+							<text class="plan-goal">{{ getGoalText(plan.userInfo.fitnessGoal) }}</text>
+						</view>
+						<text class="arrow">></text>
+					</view>
+				</scroll-view>
+			</view>
+		</uni-popup>
 		
 		<view class="form-container">
 			<!-- 步骤指示器 -->
@@ -73,31 +112,52 @@
 			<view class="step-content" v-if="currentStep === 2">
 				<view class="form-group">
 					<text class="label required">健身目标</text>
-					<picker @change="handleGoalChange" :value="goalIndex" :range="fitnessGoals">
-						<view class="picker">
-							{{ fitnessGoals[goalIndex] }}
-						</view>
-					</picker>
-					
-					<view class="radio-group">
-						<text class="radio-label required">运动器械</text>
-						<radio-group @change="handleEquipmentChange">
-							<label class="radio-item" v-for="(venue, index) in venues" :key="index">
-								<radio :value="venue.value" :checked="formData.venue === venue.value" color="#4CAF50" />
-								<text>{{ venue.label }}</text>
-							</label>
-						</radio-group>
-					</view>
-					
-					<view class="radio-group">
-						<text class="radio-label required">计划周期</text>
-						<radio-group @change="handleDurationChange">
-							<label class="radio-item" v-for="(duration, index) in durations" :key="index">
-								<radio :value="duration.value" :checked="formData.planDuration === duration.value" color="#4CAF50" />
-								<text>{{ duration.label }}</text>
-							</label>
-						</radio-group>
-					</view>
+					<radio-group @change="handleGoalChange" class="radio-group">
+						<label v-for="(goal, index) in fitnessGoals" :key="index" class="radio-item">
+							<radio :value="goal" :checked="formData.fitnessGoal === goal" color="#007AFF" />
+							<text>{{ goal }}</text>
+						</label>
+					</radio-group>
+				</view>
+				
+				<view class="form-group">
+					<text class="label required">训练场地</text>
+					<radio-group @change="handleEquipmentChange" class="radio-group">
+						<label v-for="(venue, index) in venues" :key="index" class="radio-item">
+							<radio :value="venue.value" :checked="formData.venue === venue.value" color="#007AFF" />
+							<text>{{ venue.label }}</text>
+						</label>
+					</radio-group>
+				</view>
+				
+				<view class="form-group">
+					<text class="label required">每周训练天数</text>
+					<radio-group @change="handleWeeklyDaysChange" class="radio-group">
+						<label v-for="(option, index) in weeklyDaysOptions" :key="index" class="radio-item">
+							<radio :value="option.value" :checked="formData.weeklyDays === option.value" color="#007AFF" />
+							<text>{{ option.label }}</text>
+						</label>
+					</radio-group>
+				</view>
+				
+				<view class="form-group">
+					<text class="label required">每天训练时长</text>
+					<radio-group @change="handleDailyDurationChange" class="radio-group">
+						<label v-for="(option, index) in dailyDurationOptions" :key="index" class="radio-item">
+							<radio :value="option.value" :checked="formData.dailyDuration === option.value" color="#007AFF" />
+							<text>{{ option.label }}</text>
+						</label>
+					</radio-group>
+				</view>
+				
+				<view class="form-group">
+					<text class="label required">计划时长</text>
+					<radio-group @change="handleDurationChange" class="radio-group">
+						<label v-for="(duration, index) in planDurations" :key="index" class="radio-item">
+							<radio :value="duration.value" :checked="formData.planDuration === duration.value" color="#007AFF" />
+							<text>{{ duration.label }}</text>
+						</label>
+					</radio-group>
 				</view>
 			</view>
 			
@@ -143,10 +203,13 @@ export default {
 				gender: 'male',
 				experience: 'beginner',
 				injuries: [],
+				customInjury: '',
 				fitnessGoal: 'weight_loss',
 				venue: 'gym',
 				isBodyweight: false,
-				planDuration: 'month'
+				planDuration: 'month',
+				weeklyDays: 3,
+				dailyDuration: 60
 			},
 			fitnessGoals: ['减脂', '增肌', '保持健康', '提高力量', '改善体态'],
 			goalIndex: 0,
@@ -159,7 +222,10 @@ export default {
 				{ label: '膝关节', value: 'knee' },
 				{ label: '腰部', value: 'back' },
 				{ label: '肩部', value: 'shoulder' },
-				{ label: '手腕', value: 'wrist' }
+				{ label: '手腕', value: 'wrist' },
+				{ label: '手肘', value: 'elbow' },
+				{ label: '踝关节', value: 'ankle' },
+				{ label: '其他', value: 'other' }
 			],
 			venues: [
 				{ label: '器械丰富（健身房）', value: 'gym' },
@@ -171,10 +237,39 @@ export default {
 				{ label: '三个月', value: 'quarter' },
 				{ label: '半年', value: 'half_year' }
 			],
+			weeklyDaysOptions: [
+				{ label: '2天', value: 2 },
+				{ label: '3天', value: 3 },
+				{ label: '4天', value: 4 },
+				{ label: '5天', value: 5 },
+				{ label: '6天', value: 6 }
+			],
+			dailyDurationOptions: [
+				{ label: '30分钟', value: 30 },
+				{ label: '45分钟', value: 45 },
+				{ label: '60分钟', value: 60 },
+				{ label: '90分钟', value: 90 },
+				{ label: '120分钟', value: 120 }
+			],
 			isGenerating: false,
 			loadingTimer: null,
-			loadingDots: ''
+			loadingDots: '',
+			userInfo: {},
+			historyPlans: []
 		}
+	},
+	onLoad() {
+		// 检查登录状态
+		const userId = uni.getStorageSync('userId');
+		if (!userId) {
+			uni.redirectTo({
+				url: '/pages/login/login'
+			});
+			return;
+		}
+		
+		// 获取用户信息
+		this.userInfo = uni.getStorageSync('userInfo') || {};
 	},
 	methods: {
 		handleGenderChange(e) {
@@ -195,7 +290,20 @@ export default {
 			this.formData.fitnessGoal = goalMap[this.goalIndex];
 		},
 		handleInjuriesChange(e) {
-			this.formData.injuries = e.detail.value;
+			const values = e.detail.value;
+			this.formData.injuries = values.filter(v => v !== 'other');
+			if (values.includes('other')) {
+				uni.showModal({
+					title: '请输入具体损伤部位',
+					editable: true,
+					placeholderText: '请输入具体损伤部位',
+					success: (res) => {
+						if (res.confirm && res.content) {
+							this.formData.customInjury = res.content;
+						}
+					}
+				});
+			}
 		},
 		handleEquipmentChange(e) {
 			const value = e.detail.value;
@@ -204,6 +312,12 @@ export default {
 		},
 		handleDurationChange(e) {
 			this.formData.planDuration = e.detail.value;
+		},
+		handleWeeklyDaysChange(e) {
+			this.formData.weeklyDays = parseInt(e.detail.value);
+		},
+		handleDailyDurationChange(e) {
+			this.formData.dailyDuration = parseInt(e.detail.value);
 		},
 		nextStep() {
 			if (this.currentStep < this.steps.length - 1) {
@@ -239,22 +353,26 @@ export default {
 				this.isGenerating = true;
 				this.startLoadingAnimation();
 				
-				// 设置超时处理
-				const timeoutPromise = new Promise((_, reject) => {
-					setTimeout(() => {
-						reject(new Error('请求超时，请稍后重试'));
-					}, 180000); // 180秒超时
-				});
+				// 处理自定义损伤
+				const injuries = [...this.formData.injuries];
+				if (this.formData.customInjury) {
+					injuries.push(this.formData.customInjury);
+				}
 				
 				const result = await Promise.race([
 					uniCloud.callFunction({
 						name: 'generateFitnessPlan',
 						data: {
 							...this.formData,
+							injuries,
 							userId: uni.getStorageSync('userId')
 						}
 					}),
-					timeoutPromise
+					new Promise((_, reject) => {
+						setTimeout(() => {
+							reject(new Error('请求超时，请稍后重试'));
+						}, 180000);
+					})
 				]);
 				
 				if (result.result.code === 0) {
@@ -265,6 +383,7 @@ export default {
 					throw new Error(result.result.message);
 				}
 			} catch (error) {
+				console.error('生成计划失败：', error);
 				uni.showModal({
 					title: '生成失败',
 					content: error.message || '生成计划失败，请稍后重试',
@@ -287,10 +406,78 @@ export default {
 				clearInterval(this.loadingTimer);
 				this.loadingTimer = null;
 			}
+		},
+		
+		showUserMenu() {
+			this.$refs.userMenuPopup.open();
+		},
+		
+		async viewHistoryPlans() {
+			try {
+				const result = await uniCloud.callFunction({
+					name: 'getUserPlans'
+				});
+				
+				if (result.result.code === 0) {
+					this.historyPlans = result.result.data;
+					this.$refs.historyPopup.open();
+				} else {
+					throw new Error(result.result.message);
+				}
+			} catch (error) {
+				console.error('获取历史计划失败：', error);
+				uni.showToast({
+					title: '获取历史计划失败',
+					icon: 'none'
+				});
+			}
+		},
+		
+		viewPlan(planId) {
+			uni.navigateTo({
+				url: `/pages/result/result?planId=${planId}`
+			});
+			this.closeHistory();
+		},
+		
+		closeHistory() {
+			this.$refs.historyPopup.close();
+		},
+		
+		handleLogout() {
+			uni.showModal({
+				title: '提示',
+				content: '确定要退出登录吗？',
+				success: (res) => {
+					if (res.confirm) {
+						// 清除用户信息
+						uni.removeStorageSync('userId');
+						uni.removeStorageSync('userInfo');
+						
+						// 跳转到登录页
+						uni.redirectTo({
+							url: '/pages/login/login'
+						});
+					}
+				}
+			});
+		},
+		
+		formatDate(date) {
+			const d = new Date(date);
+			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+		},
+		
+		getGoalText(goal) {
+			const goalMap = {
+				'weight_loss': '减脂',
+				'muscle_gain': '增肌',
+				'health': '保持健康',
+				'strength': '提高力量',
+				'posture': '改善体态'
+			};
+			return goalMap[goal] || goal;
 		}
-	},
-	beforeDestroy() {
-		this.stopLoadingAnimation();
 	}
 }
 </script>
@@ -330,6 +517,20 @@ export default {
 		.subtitle {
 			font-size: 32rpx;
 			opacity: 0.9;
+		}
+	}
+	
+	.user-info {
+		position: absolute;
+		top: 40rpx;
+		right: 40rpx;
+		z-index: 10;
+		
+		.avatar {
+			width: 80rpx;
+			height: 80rpx;
+			border-radius: 50%;
+			border: 4rpx solid rgba(255, 255, 255, 0.8);
 		}
 	}
 }
@@ -594,6 +795,99 @@ export default {
 	}
 	100% {
 		transform: rotate(360deg);
+	}
+}
+
+.user-menu {
+	background-color: #ffffff;
+	border-radius: 24rpx 24rpx 0 0;
+	padding: 32rpx;
+	
+	.menu-item {
+		display: flex;
+		align-items: center;
+		padding: 24rpx 0;
+		border-bottom: 2rpx solid #f0f0f0;
+		
+		&:last-child {
+			border-bottom: none;
+		}
+		
+		.menu-icon {
+			font-size: 36rpx;
+			margin-right: 16rpx;
+		}
+		
+		text {
+			font-size: 32rpx;
+			color: #333333;
+		}
+	}
+}
+
+.history-list {
+	background-color: #ffffff;
+	border-radius: 24rpx 24rpx 0 0;
+	height: 800rpx;
+	
+	.history-header {
+		padding: 32rpx;
+		border-bottom: 2rpx solid #f0f0f0;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		
+		.history-title {
+			font-size: 36rpx;
+			font-weight: bold;
+			color: #333333;
+		}
+		
+		.close-btn {
+			font-size: 48rpx;
+			color: #999999;
+			padding: 0 16rpx;
+		}
+	}
+	
+	.history-content {
+		height: calc(100% - 100rpx);
+		padding: 0 32rpx;
+		
+		.empty-tip {
+			text-align: center;
+			padding: 100rpx 0;
+			color: #999999;
+			font-size: 28rpx;
+		}
+		
+		.plan-item {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 32rpx 0;
+			border-bottom: 2rpx solid #f0f0f0;
+			
+			.plan-info {
+				.plan-date {
+					font-size: 28rpx;
+					color: #666666;
+					margin-bottom: 8rpx;
+					display: block;
+				}
+				
+				.plan-goal {
+					font-size: 32rpx;
+					color: #333333;
+					font-weight: bold;
+				}
+			}
+			
+			.arrow {
+				font-size: 36rpx;
+				color: #999999;
+			}
+		}
 	}
 }
 </style>

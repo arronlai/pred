@@ -1,692 +1,284 @@
 <template>
   <view class="container">
-    <view class="stars"></view>
-    <view class="stars2"></view>
-    <view class="stars3"></view>
-    <view class="shooting-star" style="--delay: 0; --top: 30%; --left: 80%; --size: 1; --brightness: 1"></view>
-    <view class="shooting-star" style="--delay: 2.5; --top: 15%; --left: 70%; --size: 0.7; --brightness: 0.9"></view>
-    <view class="shooting-star" style="--delay: 5.7; --top: 45%; --left: 90%; --size: 1.2; --brightness: 0.8"></view>
-    <view class="shooting-star" style="--delay: 8.3; --top: 10%; --left: 60%; --size: 0.8; --brightness: 1.1"></view>
-    <view class="shooting-star" style="--delay: 12.1; --top: 60%; --left: 75%; --size: 1.3; --brightness: 0.7"></view>
+    <view class="header">
+      <image class="logo" src="/static/images/logo.png" mode="aspectFit"></image>
+      <text class="title">AI健身教练</text>
+      <text class="subtitle">您的专属智能健身助手</text>
+    </view>
     
-    <view class="login-card">
-      <image class="logo" src="/static/logo.png" mode="aspectFit"></image>
-      <view class="title">数字知识助手</view>
-      <view class="subtitle"></view>
-
-      <!-- 协议勾选框 -->
-      <view class="agreement-checkbox">
-        <view class="checkbox-wrapper" @click="toggleAgreement">
-          <view class="checkbox" :class="{ 'checked': agreedToTerms }">
-            <text v-if="agreedToTerms" class="checkbox-icon">✓</text>
-          </view>
-        </view>
-        <view class="agreement-text">
-          我已阅读并同意
-          <text class="link" @click="showAgreement">《服务协议》</text>
-          和
-          <text class="link" @click="showPrivacy">《免责声明》</text>
-        </view>
-      </view>
-
-      <!-- 使用新的授权方式 -->
-      <button class="login-btn" :class="{ 'disabled': !agreedToTerms }" @click="handleGetUserProfile" :disabled="!agreedToTerms">
-        微信一键登录
+    <view class="login-form">
+      <button class="login-btn" @click="handleLogin">
+        <image class="wechat-icon" src="/static/images/wechat.png" mode="aspectFit"></image>
+        <text>微信一键登录</text>
       </button>
-
-      <!-- 或使用头像昵称填写组件 -->
-      <view class="profile-area" v-if="showProfileInput">
-        <button
-          class="avatar-btn"
-          open-type="chooseAvatar"
-          @chooseavatar="onChooseAvatar"
-        >
-          <image
-            class="avatar-preview"
-            :src="avatarUrl"
-            mode="aspectFill"
-          ></image>
-          <text class="avatar-text">点击选择头像</text>
-        </button>
-
-        <view class="nickname-input">
-          <text class="input-label">昵称</text>
-          <input
-            type="nickname"
-            v-model="nickName"
-            placeholder="请输入昵称"
-            @blur="onNicknameChange"
-          />
+      
+      <view class="agreement">
+        <checkbox-group @change="handleAgreementChange">
+          <label class="agreement-item">
+            <checkbox :checked="isAgreed" color="#4CAF50" />
+            <text class="agreement-text">我已阅读并同意</text>
+          </label>
+        </checkbox-group>
+        <view class="agreement-links">
+          <text class="link" @click="showUserAgreement">《用户协议》</text>
+          <text class="link" @click="showPrivacyPolicy">《隐私政策》</text>
         </view>
-
-        <button class="confirm-btn" @click="confirmUserInfo" :disabled="!agreedToTerms" :class="{ 'disabled': !agreedToTerms }">确认</button>
       </view>
     </view>
     
-    <!-- 协议弹窗 -->
-    <view class="popup" v-if="showPopup">
+    <!-- 用户协议弹窗 -->
+    <uni-popup ref="userAgreementPopup" type="center">
       <view class="popup-content">
         <view class="popup-header">
-          <text class="popup-title">{{ popupTitle }}</text>
-          <text class="popup-close" @click="closePopup">×</text>
+          <text class="popup-title">用户协议</text>
+          <text class="close-btn" @click="closePopup">×</text>
         </view>
-        <scroll-view class="popup-body" scroll-y="true">
-          <view v-if="popupType === 'agreement'" class="content-wrapper">
-            <view class="popup-text">
-              <view class="popup-item">1. 服务介绍：本服务是一款基于人工智能的数字预测工具，旨在提供娱乐和参考用途。</view>
-              <view class="popup-item">2. 账号注册：用户需使用微信登录授权，我们可能获取您的头像和昵称信息用于服务提供。</view>
-              <view class="popup-item">3. 使用规则：每位用户每日有基础使用次数限制，通过分享可获得额外使用次数。</view>
-              <view class="popup-item">4. 信息保护：我们会对用户提供的信息进行保密，不会将您的个人信息用于服务之外的用途。</view>
-              <view class="popup-item">5. 内容所有权：本应用内容的所有权归开发者所有，用户不得进行商业用途的复制或传播。</view>
-              <view class="popup-item">6. 用户内容：用户提交的信息不得包含违法、侵权等内容，否则我们有权删除并追究相关责任。</view>
-              <view class="popup-item">7. 服务变更：我们有权随时修改或中断服务，修改后的协议在公布后立即生效。</view>
-            </view>
-          </view>
-          <view v-else-if="popupType === 'privacy'" class="content-wrapper">
-            <view class="popup-text">
-              <view class="popup-item">1. 预测结果仅供娱乐参考：本应用生成的所有预测内容仅供娱乐和参考，不构成任何建议或决策依据。</view>
-              <view class="popup-item">2. 不承担决策责任：用户基于本应用内容做出的任何决策所产生的后果，由用户自行承担。</view>
-              <view class="popup-item">3. 服务中断免责：因不可抗力、设备故障、网络问题等原因导致服务中断，我们不承担责任。</view>
-              <view class="popup-item">4. 内容准确性：我们不对AI生成内容的准确性、适用性或完整性作出任何明示或暗示的保证。</view>
-              <view class="popup-item">5. 第三方链接：本应用可能包含第三方链接，对于第三方的内容、隐私政策及行为不承担任何责任。</view>
-              <view class="popup-item">6. 用户投诉处理：我们会尽力处理用户反馈的问题，但不保证能满足所有用户的要求。</view>
-            </view>
-          </view>
+        <scroll-view class="popup-body" scroll-y>
+          <text class="agreement-content">
+            欢迎使用AI健身教练服务。本协议是您与AI健身教练之间关于使用本服务的协议。
+            
+            1. 服务内容
+            AI健身教练为您提供个性化的健身计划制定、营养建议和训练指导服务。
+            
+            2. 用户责任
+            - 提供真实、准确的个人信息
+            - 遵守训练计划，注意安全
+            - 如有身体不适，及时就医
+            
+            3. 隐私保护
+            我们重视您的隐私，承诺保护您的个人信息安全。
+            
+            4. 免责声明
+            本服务提供的建议仅供参考，不构成医疗建议。
+          </text>
         </scroll-view>
-        <view class="popup-footer">
-          <button class="popup-btn" @click="agreeAndClose">我已阅读并同意</button>
-        </view>
       </view>
-    </view>
+    </uni-popup>
+    
+    <!-- 隐私政策弹窗 -->
+    <uni-popup ref="privacyPolicyPopup" type="center">
+      <view class="popup-content">
+        <view class="popup-header">
+          <text class="popup-title">隐私政策</text>
+          <text class="close-btn" @click="closePopup">×</text>
+        </view>
+        <scroll-view class="popup-body" scroll-y>
+          <text class="agreement-content">
+            隐私政策
+            
+            1. 信息收集
+            - 基本信息：身高、体重、年龄等
+            - 健身数据：训练记录、目标等
+            - 设备信息：设备型号、系统版本等
+            
+            2. 信息使用
+            - 提供个性化服务
+            - 改进服务质量
+            - 发送服务通知
+            
+            3. 信息保护
+            - 数据加密存储
+            - 访问权限控制
+            - 定期安全审计
+          </text>
+        </scroll-view>
+      </view>
+    </uni-popup>
   </view>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
-
-// 重定向地址
-const redirect = ref('');
-// 用户信息
-const avatarUrl = ref('/static/default-avatar.png');
-const nickName = ref('');
-// 是否显示头像昵称输入区域
-const showProfileInput = ref(false);
-
-// 弹窗状态
-const showPopup = ref(false);
-const popupType = ref('');
-const popupTitle = ref('');
-
-// 协议勾选状态
-const agreedToTerms = ref(false);
-
-// 页面加载获取重定向地址
-onLoad((options) => {
-  if (options.redirect) {
-    redirect.value = decodeURIComponent(options.redirect);
-  }
-});
-
-// 切换协议勾选状态
-const toggleAgreement = () => {
-  agreedToTerms.value = !agreedToTerms.value;
-};
-
-// 获取用户信息 - 新API
-const handleGetUserProfile = () => {
-  if (!agreedToTerms.value) {
-    uni.showToast({
-      title: '请先阅读并同意服务协议和免责声明',
-      icon: 'none'
-    });
-    return;
-  }
-  
-  // 旧版API，不推荐使用
-  if (uni.getUserProfile) {
-    uni.getUserProfile({
-      desc: '用于完善会员资料',
-      success: (res) => {
-        handleLogin(res.userInfo);
-      },
-      fail: (err) => {
-        console.log('获取用户信息失败', err);
-        // 如果用户拒绝，切换到填写方式
-        showProfileInput.value = true;
-      },
-    });
-  } else {
-    // 如果不支持getUserProfile，使用登录+输入方式
-    showProfileInput.value = true;
-    // 直接登录，稍后再补充用户资料
-    getLoginCode();
-  }
-};
-
-// 头像选择回调
-const onChooseAvatar = (e) => {
-  avatarUrl.value = e.detail.avatarUrl;
-};
-
-// 昵称输入回调
-const onNicknameChange = (e) => {
-  nickName.value = e.detail.value;
-};
-
-// 确认用户信息
-const confirmUserInfo = () => {
-  if (!agreedToTerms.value) {
-    uni.showToast({
-      title: '请先阅读并同意服务协议和免责声明',
-      icon: 'none'
-    });
-    return;
-  }
-  
-  if (!nickName.value) {
-    uni.showToast({
-      title: '请输入昵称',
-      icon: 'none',
-    });
-    return;
-  }
-
-  // 使用用户填写的信息登录
-  handleLogin({
-    avatarUrl: avatarUrl.value,
-    nickName: nickName.value,
-    gender: 0,
-  });
-};
-
-// 获取登录code
-const getLoginCode = () => {
-  return new Promise((resolve, reject) => {
-    uni.login({
-      success: (res) => {
-        if (res.code) {
-          resolve(res.code);
-        } else {
-          reject(new Error('获取code失败'));
-        }
-      },
-      fail: (err) => {
-        reject(err);
-      },
-    });
-  });
-};
-
-// 处理登录
-const handleLogin = async (userInfo) => {
-  uni.showLoading({
-    title: '登录中...',
-  });
-
-  try {
-    // 获取code
-    const code = await getLoginCode();
-
-    // 调用云函数登录
-    const result = await uniCloud.callFunction({
-      name: 'login',
-      data: {
-        code,
-        userInfo,
-      },
-    });
-
-    if (result.result.code === 0) {
-      // 登录成功，保存用户信息
-      uni.setStorageSync('userInfo', result.result.data.userInfo);
-      uni.setStorageSync('token', result.result.data.token);
-
-      uni.hideLoading();
-      uni.showToast({
-        title: '登录成功',
-        icon: 'success',
-      });
-
-      // 登录成功后跳转
-      setTimeout(() => {
-        if (redirect.value) {
-          // 跳转到重定向地址
-          uni.redirectTo({
-            url: redirect.value,
-            fail: () => {
-              // 如果跳转失败，返回上一页或首页
-              uni.navigateBack({
-                fail: () => {
-                  uni.switchTab({
-                    url: '/pages/index/index',
-                  });
-                },
-              });
-            },
-          });
-        } else {
-          // 没有重定向地址则返回上一页或首页
-          uni.navigateBack({
-            fail: () => {
-              uni.switchTab({
-                url: '/pages/index/index',
-              });
-            },
-          });
-        }
-      }, 1500);
-    } else {
-      throw new Error(result.result.message);
+<script>
+export default {
+  data() {
+    return {
+      isAgreed: false
     }
-  } catch (error) {
-    uni.hideLoading();
-    uni.showToast({
-      title: error.message || '登录失败',
-      icon: 'none',
-    });
+  },
+  methods: {
+    handleAgreementChange(e) {
+      this.isAgreed = e.detail.value.length > 0;
+    },
+    
+    async handleLogin() {
+      if (!this.isAgreed) {
+        uni.showToast({
+          title: '请先同意用户协议和隐私政策',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      try {
+        // 获取微信登录凭证
+        const { code } = await uni.login();
+        
+        // 调用云函数进行登录
+        const result = await uniCloud.callFunction({
+          name: 'login',
+          data: { code }
+        });
+        
+        if (result.result.code === 0) {
+          // 保存用户信息
+          uni.setStorageSync('userId', result.result.data.openid);
+          uni.setStorageSync('userInfo', result.result.data.userInfo);
+          
+          // 跳转到首页
+          uni.reLaunch({
+            url: '/pages/index/index'
+          });
+        } else {
+          throw new Error(result.result.message);
+        }
+      } catch (error) {
+        console.error('登录失败：', error);
+        uni.showToast({
+          title: '登录失败，请重试',
+          icon: 'none'
+        });
+      }
+    },
+    
+    showUserAgreement() {
+      this.$refs.userAgreementPopup.open();
+    },
+    
+    showPrivacyPolicy() {
+      this.$refs.privacyPolicyPopup.open();
+    },
+    
+    closePopup() {
+      this.$refs.userAgreementPopup.close();
+      this.$refs.privacyPolicyPopup.close();
+    }
   }
-};
-
-// 显示服务协议
-const showAgreement = () => {
-  popupType.value = 'agreement';
-  popupTitle.value = '服务协议';
-  showPopup.value = true;
-};
-
-// 显示隐私政策
-const showPrivacy = () => {
-  popupType.value = 'privacy';
-  popupTitle.value = '免责声明';
-  showPopup.value = true;
-};
-
-// 关闭弹窗
-const closePopup = () => {
-  showPopup.value = false;
-};
-
-// 同意并关闭弹窗
-const agreeAndClose = () => {
-  agreedToTerms.value = true;
-  showPopup.value = false;
-};
+}
 </script>
 
-<style>
+<style lang="scss">
 .container {
-  height: 100vh;
-  overflow: hidden;
-  box-sizing: border-box;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  padding: 60rpx 40rpx;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
 }
 
-.login-card {
-  width: 80%;
-  max-width: 800rpx;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 40rpx;
-  padding: 60rpx 50rpx;
+.header {
   text-align: center;
-  box-shadow: 0 16rpx 64rpx rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 80rpx;
+  
+  .logo {
+    width: 160rpx;
+    height: 160rpx;
+    margin-bottom: 24rpx;
+  }
+  
+  .title {
+    font-size: 48rpx;
+    color: #ffffff;
+    font-weight: bold;
+    margin-bottom: 16rpx;
+    display: block;
+  }
+  
+  .subtitle {
+    font-size: 32rpx;
+    color: rgba(255, 255, 255, 0.9);
+    display: block;
+  }
 }
 
-.logo {
-  width: 160rpx;
-  height: 160rpx;
-  margin-bottom: 40rpx;
-}
-
-.title {
-  font-size: 48rpx;
-  color: #fff;
-  margin-bottom: 16rpx;
-}
-
-.subtitle {
-  font-size: 32rpx;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 40rpx;
-}
-
-/* 协议勾选样式 */
-.agreement-checkbox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 20rpx 0 40rpx;
-}
-
-.checkbox-wrapper {
-  padding: 6rpx;
-}
-
-.checkbox {
-  width: 28rpx;
-  height: 28rpx;
-  border: 2rpx solid rgba(255, 255, 255, 0.5);
-  border-radius: 6rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 10rpx;
-  transition: all 0.2s ease;
-}
-
-.checkbox.checked {
-  background: #56ccf2;
-  border-color: #56ccf2;
-}
-
-.checkbox-icon {
-  color: white;
-  font-size: 20rpx;
-  font-weight: bold;
-}
-
-.login-btn {
-  background: linear-gradient(45deg, #2979ff, #56ccf2);
-  border: none;
-  color: white;
-  padding: 20rpx 0;
-  width: 90%;
-  font-size: 32rpx;
-  border-radius: 40rpx;
-  margin: 40rpx auto;
-  box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  letter-spacing: 2rpx;
-  transition: all 0.3s ease;
-}
-
-.login-btn.disabled {
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.5);
-  box-shadow: none;
-}
-
-.profile-area {
-  margin-top: 40rpx;
-  width: 90%;
-  margin: 40rpx auto 0;
-}
-
-.avatar-btn {
-  background: transparent;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 30rpx;
-}
-
-.avatar-preview {
-  width: 110rpx;
-  height: 110rpx;
-  border-radius: 55rpx;
-  margin-bottom: 10rpx;
-  border: 4rpx solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.avatar-text {
-  font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.nickname-input {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-bottom: 30rpx;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 16rpx;
-  padding: 20rpx;
-  text-align: left;
-}
-
-.input-label {
-  font-size: 28rpx;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 10rpx;
-}
-
-.nickname-input input {
+.login-form {
   width: 100%;
-  height: 80rpx;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12rpx;
-  padding: 0 20rpx;
-  font-size: 30rpx;
-  color: white;
-}
-
-.confirm-btn {
-  background: linear-gradient(45deg, #00a3ff, #00ff88);
-  border: none;
-  color: white;
-  padding: 24rpx 0;
-  width: 100%;
-  font-size: 34rpx;
-  border-radius: 40rpx;
-  margin-top: 20rpx;
-  box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.2);
-}
-
-.confirm-btn.disabled {
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.5);
-  box-shadow: none;
-}
-
-.agreement-text {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.5;
-}
-
-.link {
-  color: #56ccf2;
-  text-decoration: underline;
-}
-
-/* 流星效果 */
-.stars {
-  width: 4rpx;
-  height: 4rpx;
-  background: transparent;
-  box-shadow: 
-    3608rpx 2530rpx #FFF, 730rpx 664rpx #FFF, 172rpx 3776rpx #FFF, 3776rpx 968rpx #FFF,
-    398rpx 2978rpx #FFF, 2918rpx 2020rpx #FFF, 1614rpx 776rpx #FFF, 1710rpx 1116rpx #FFF;
-  animation: animStar 50s linear infinite;
-  opacity: 0.8;
-}
-
-.stars:after {
-  content: " ";
-  position: absolute;
-  top: 4000rpx; 
-  width: 4rpx;
-  height: 4rpx;
-  background: transparent;
-  box-shadow: 
-    3608rpx 2530rpx #FFF, 730rpx 664rpx #FFF, 172rpx 3776rpx #FFF, 3776rpx 968rpx #FFF,
-    398rpx 2978rpx #FFF, 2918rpx 2020rpx #FFF, 1614rpx 776rpx #FFF, 1710rpx 1116rpx #FFF;
-}
-
-.stars2 {
-  width: 6rpx;
-  height: 6rpx;
-  background: transparent;
-  box-shadow: 
-    3628rpx 2550rpx #FFF, 750rpx 684rpx #FFF, 192rpx 3796rpx #FFF, 3796rpx 988rpx #FFF;
-  animation: animStar 100s linear infinite;
-  opacity: 0.9;
-}
-
-.stars2:after {
-  content: " ";
-  position: absolute;
-  top: 4000rpx;
-  width: 6rpx;
-  height: 6rpx;
-  background: transparent;
-  box-shadow: 
-    3628rpx 2550rpx #FFF, 750rpx 684rpx #FFF, 192rpx 3796rpx #FFF, 3796rpx 988rpx #FFF;
-}
-
-.stars3 {
-  width: 8rpx;
-  height: 8rpx;
-  background: transparent;
-  box-shadow: 
-    3648rpx 2570rpx #FFF, 770rpx 704rpx #FFF, 212rpx 3816rpx #FFF, 3816rpx 1008rpx #FFF;
-  animation: animStar 150s linear infinite;
-  opacity: 1;
-}
-
-.stars3:after {
-  content: " ";
-  position: absolute;
-  top: 4000rpx;
-  width: 8rpx;
-  height: 8rpx;
-  background: transparent;
-  box-shadow: 
-    3648rpx 2570rpx #FFF, 770rpx 704rpx #FFF, 212rpx 3816rpx #FFF, 3816rpx 1008rpx #FFF;
-}
-
-@keyframes animStar {
-  from {
-    transform: translateY(0rpx);
-  }
-  to {
-    transform: translateY(-4000rpx);
+  
+  .login-btn {
+    width: 100%;
+    height: 96rpx;
+    background-color: #ffffff;
+    border-radius: 48rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    margin-bottom: 40rpx;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+    
+    .wechat-icon {
+      width: 48rpx;
+      height: 48rpx;
+    }
+    
+    text {
+      font-size: 32rpx;
+      color: #333333;
+    }
   }
 }
 
-.shooting-star {
-  position: absolute;
-  top: var(--top, 50%);
-  left: var(--left, 80%);
-  width: calc(200rpx * var(--size, 1));
-  height: calc(4rpx * var(--size, 1));
-  background: linear-gradient(90deg, rgba(255, 255, 255, var(--brightness, 1)), transparent);
-  animation: shootingStar 8s infinite;
-  animation-delay: calc(var(--delay) * 1s);
-  opacity: 0;
-  z-index: 2;
-  filter: blur(calc(2rpx * var(--size, 1)));
-}
-
-@keyframes shootingStar {
-  0% {
-    transform: translate(0, 0) rotate(-45deg) scale(0);
-    opacity: 0;
+.agreement {
+  text-align: center;
+  
+  .agreement-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16rpx;
+    
+    .agreement-text {
+      font-size: 26rpx;
+      color: rgba(255, 255, 255, 0.9);
+      margin-left: 8rpx;
+    }
   }
-  2% {
-    transform: translate(-40rpx, 40rpx) rotate(-45deg) scale(var(--size, 1));
-    opacity: var(--brightness, 1);
+  
+  .agreement-links {
+    .link {
+      font-size: 26rpx;
+      color: #ffffff;
+      text-decoration: underline;
+      margin: 0 8rpx;
+    }
   }
-  8% {
-    transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1));
-    opacity: 0;
-  }
-  100% {
-    transform: translate(-400rpx, 400rpx) rotate(-45deg) scale(var(--size, 1));
-    opacity: 0;
-  }
-}
-
-/* 弹窗样式 */
-.popup {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(5px);
 }
 
 .popup-content {
-  width: 80%;
-  max-width: 600rpx;
-  background: rgba(27, 38, 54, 0.95);
-  border-radius: 20rpx;
+  width: 600rpx;
+  background-color: #ffffff;
+  border-radius: 24rpx;
   overflow: hidden;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  display: flex;
-  flex-direction: column;
-  max-height: 80vh;
-}
-
-.popup-header {
-  padding: 26rpx 30rpx;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.popup-title {
-  font-size: 34rpx;
-  font-weight: bold;
-  color: #fff;
-}
-
-.popup-close {
-  font-size: 44rpx;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1;
-}
-
-.popup-body {
-  max-height: 60vh;
-  box-sizing: border-box;
-}
-
-.popup-body .content-wrapper {
-  padding: 30rpx;
-}
-
-.popup-text {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 28rpx;
-  line-height: 1.6;
-}
-
-.popup-item {
-  margin-bottom: 20rpx;
-}
-
-.popup-footer {
-  padding: 30rpx;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.popup-btn {
-  background: linear-gradient(45deg, #2979ff, #56ccf2);
-  color: white;
-  border: none;
-  border-radius: 40rpx;
-  font-size: 30rpx;
-  padding: 20rpx 0;
-  width: 100%;
+  
+  .popup-header {
+    padding: 32rpx;
+    border-bottom: 2rpx solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .popup-title {
+      font-size: 36rpx;
+      font-weight: bold;
+      color: #333333;
+    }
+    
+    .close-btn {
+      font-size: 48rpx;
+      color: #999999;
+      padding: 0 16rpx;
+    }
+  }
+  
+  .popup-body {
+    height: 800rpx;
+    padding: 32rpx;
+    
+    .agreement-content {
+      font-size: 28rpx;
+      color: #666666;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+  }
 }
 </style>
