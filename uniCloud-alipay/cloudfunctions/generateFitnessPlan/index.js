@@ -83,28 +83,106 @@ const SYSTEM_PROMPT = `你是一位专业的健身教练和营养师。请根据
 const db = uniCloud.database();
 const fitnessPlanCollection = db.collection('fitness_plans');
 
-// 修改解析AI返回内容的逻辑
-const parseAIResponse = (content) => {
+// 解析AI响应
+function parseAIResponse(content) {
 	try {
-		// 清理可能存在的Markdown代码块标记
+		// 1. 清理内容
 		let cleanedContent = content
 			.replace(/```(?:json)?\s*/g, '')  // 移除开头的 ```json 或 ```
 			.replace(/```\s*$/g, '')          // 移除结尾的 ```
 			.replace(/^[\s\S]*?({[\s\S]*})[\s\S]*$/, '$1')  // 提取JSON对象
 			.trim();                          // 移除首尾空白
-		
-		// 尝试直接解析JSON
-		const plan = JSON.parse(cleanedContent);
-		return plan;
+
+		// 2. 尝试直接解析
+		try {
+			return JSON.parse(cleanedContent);
+		} catch (error) {
+			console.log('直接解析失败，尝试修复格式');
+		}
+
+		// 3. 尝试修复常见格式问题
+		try {
+			// 检查并修复缺失的括号
+			let openBraces = (cleanedContent.match(/{/g) || []).length;
+			let closeBraces = (cleanedContent.match(/}/g) || []).length;
+			let openBrackets = (cleanedContent.match(/\[/g) || []).length;
+			let closeBrackets = (cleanedContent.match(/\]/g) || []).length;
+
+			// 补充缺失的括号
+			if (openBraces > closeBraces) {
+				cleanedContent += '}'.repeat(openBraces - closeBraces);
+			}
+			if (openBrackets > closeBrackets) {
+				cleanedContent += ']'.repeat(openBrackets - closeBrackets);
+			}
+
+			return JSON.parse(cleanedContent);
+		} catch (error) {
+			console.log('修复括号后解析失败，尝试提取关键信息');
+		}
+
+		// 4. 尝试提取关键信息
+		try {
+			const result = {};
+			
+			// 提取 workoutPlan
+			const workoutPlanMatch = cleanedContent.match(/"workoutPlan":\s*({[\s\S]*?})/);
+			if (workoutPlanMatch) {
+				try {
+					result.workoutPlan = JSON.parse(workoutPlanMatch[1]);
+				} catch (e) {
+					console.log('解析workoutPlan失败，尝试修复格式');
+					// 尝试修复workoutPlan格式
+					const fixedWorkoutPlan = workoutPlanMatch[1]
+						.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')  // 修复未加引号的键
+						.replace(/(:\s*)(\d+)(\s*[,}])/g, '$1"$2"$3');  // 修复数值类型
+					result.workoutPlan = JSON.parse(fixedWorkoutPlan);
+				}
+			}
+
+			// 提取 nutritionAdvice
+			const nutritionAdviceMatch = cleanedContent.match(/"nutritionAdvice":\s*({[\s\S]*?})/);
+			if (nutritionAdviceMatch) {
+				try {
+					result.nutritionAdvice = JSON.parse(nutritionAdviceMatch[1]);
+				} catch (e) {
+					console.log('解析nutritionAdvice失败，尝试修复格式');
+					const fixedNutritionAdvice = nutritionAdviceMatch[1]
+						.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
+						.replace(/(:\s*)(\d+)(\s*[,}])/g, '$1"$2"$3');
+					result.nutritionAdvice = JSON.parse(fixedNutritionAdvice);
+				}
+			}
+
+			// 提取 recoveryTips
+			const recoveryTipsMatch = cleanedContent.match(/"recoveryTips":\s*({[\s\S]*?})/);
+			if (recoveryTipsMatch) {
+				try {
+					result.recoveryTips = JSON.parse(recoveryTipsMatch[1]);
+				} catch (e) {
+					console.log('解析recoveryTips失败，尝试修复格式');
+					const fixedRecoveryTips = recoveryTipsMatch[1]
+						.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
+						.replace(/(:\s*)(\d+)(\s*[,}])/g, '$1"$2"$3');
+					result.recoveryTips = JSON.parse(fixedRecoveryTips);
+				}
+			}
+
+			// 验证必要字段
+			if (!result.workoutPlan || !result.nutritionAdvice || !result.recoveryTips) {
+				throw new Error('缺少必要字段');
+			}
+
+			return result;
+		} catch (error) {
+			console.error('提取关键信息失败:', error);
+			throw new Error('无法解析响应内容');
+		}
 	} catch (error) {
-		console.error('解析AI响应失败：', {
-			error: error.message,
-			content: content,
-			timestamp: new Date().toISOString()
-		});
-		throw new Error('健身计划格式错误，请重试');
+		console.error('解析失败:', error);
+		throw new Error('无法解析响应内容');
 	}
-};
+}
 
 exports.main = async (event, context) => {
 	const { 
@@ -119,10 +197,35 @@ exports.main = async (event, context) => {
 		planDuration,    // 计划周期
 		weeklyDays,      // 每周可健身天数
 		dailyDuration,   // 每天可健身时长
-		userId           // 用户ID
+		token           // 用户token
 	} = event;
 
 	try {
+		// 验证 token
+		if (!token) {
+			return {
+				code: -1,
+				message: '未提供用户凭证'
+			};
+		}
+		
+		// 查询用户信息
+		const user = await db.collection('users')
+			.where({
+				token: token
+			})
+			.get();
+			
+		if (user.data.length === 0) {
+			return {
+				code: -1,
+				message: '无效的用户凭证'
+			};
+		}
+		
+		const openid = user.data[0].openid;
+		console.log('获取到 openid:', openid);
+
 		// 计算BMI
 		const bmi = weight / Math.pow(height / 100, 2);
 		
@@ -170,52 +273,50 @@ exports.main = async (event, context) => {
    - HIIT训练
 5. 训练计划必须符合用户的时间安排（每周${weeklyDays}天，每天${dailyDuration}分钟）`;
 
-		// 调用AI API
-		const response = await fetch(API_URL, {
+		// 调用AI接口
+		const response = await uniCloud.httpclient.request(API_URL, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${API_KEY}`
 			},
-			body: JSON.stringify({
+			data: JSON.stringify({
 				model: "deepseek-chat",
 				messages: [
-					{
-						role: "system",
-						content: SYSTEM_PROMPT
-					},
-					{
-						role: "user",
-						content: userContent
-					}
+					{ role: "system", content: SYSTEM_PROMPT },
+					{ role: "user", content: userContent }
 				],
 				temperature: 0.7,
-				max_tokens: 2000,
-			})
+				max_tokens: 3000
+			}),
+			timeout: 180000,
+			dataType: 'json'
 		});
 
-		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}));
-			throw new Error(`API请求失败: ${response.status} - ${errorData.error?.message || '未知错误'}`);
+		if (!response.data || !response.data.choices || !response.data.choices[0] || !response.data.choices[0].message) {
+			throw new Error('AI响应格式错误');
 		}
 
-		const data = await response.json();
-		let planContent = '';
-		
-		if (data.choices && data.choices[0] && data.choices[0].message) {
-			planContent = data.choices[0].message.content;
-		} else if (data.content) {
-			planContent = data.content;
-		} else {
-			planContent = JSON.stringify(data);
+		const planContent = response.data.choices[0].message.content;
+		console.log('AI响应内容:', planContent);
+
+		// 解析AI响应
+		let plan;
+		try {
+			plan = parseAIResponse(planContent);
+		} catch (error) {
+			console.error('解析AI响应失败:', error);
+			throw new Error('解析AI响应失败: ' + error.message);
 		}
 
-		// 解析AI返回的内容
-		const plan = parseAIResponse(planContent);
+		// 验证必要字段
+		if (!plan.workoutPlan || !plan.nutritionAdvice || !plan.recoveryTips) {
+			throw new Error('AI响应缺少必要字段');
+		}
 
 		// 构建健身计划
 		const fitnessPlan = {
-			userId,
+			openid,
 			userInfo,
 			workoutPlan: plan.workoutPlan,
 			nutritionAdvice: plan.nutritionAdvice,

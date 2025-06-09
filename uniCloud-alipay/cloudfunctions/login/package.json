@@ -3,10 +3,16 @@
   "version": "1.0.0",
   "description": "数字预测云函数",
   "main": "index.js",
-  "dependencies": {
-    "uni-config-center": "file:../../../src/uni_modules/uni-config-center/uniCloud/cloudfunctions/common/uni-config-center"
+  "uni_modules": {
+    "dependencies": [
+      "uni-config-center",
+      "uni-open-bridge-common"
+    ]
   },
   "extensions": {
     "uni-cloud-jql": {}
+  },
+  "dependencies": {
+    "uni-config-center": "file:../../../src/uni_modules/uni-config-center/uniCloud/cloudfunctions/common/uni-config-center"
   }
 }

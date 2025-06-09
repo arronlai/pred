@@ -175,7 +175,7 @@ export default {
 			try {
 				this.isLoading = true;
 				const result = await uniCloud.callFunction({
-					name: 'getPlan',
+					name: 'getFitnessPlan',
 					data: { planId }
 				});
 				

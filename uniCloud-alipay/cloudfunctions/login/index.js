@@ -2,17 +2,17 @@
 
 const db = uniCloud.database();
 const configCenter = require('uni-config-center')
+const crypto = require('crypto');
 const mpConfig = configCenter({
 	pluginId: 'mp-config'
 }).config()
-const crypto = require('crypto');
 
 // 检查配置是否存在
 if (!mpConfig || !mpConfig['mp-weixin'] || !mpConfig['mp-weixin'].appid || !mpConfig['mp-weixin'].appsecret) {
 	throw new Error('微信小程序配置缺失，请检查uni-config-center/mp-config/config.json配置')
 }
 
-// 生成安全的 token
+// 生成安全的token
 function generateToken(openid) {
 	const timestamp = Date.now();
 	const randomStr = Math.random().toString(36).substr(2);
@@ -113,7 +113,7 @@ exports.main = async (event, context) => {
 		// 生成token
 		const { token, timestamp } = generateToken(openid);
 		
-		// 保存 token 到数据库
+		// 更新用户token
 		await db.collection('users').doc(user.data[0]._id).update({
 			token,
 			tokenTimestamp: timestamp,
@@ -126,11 +126,10 @@ exports.main = async (event, context) => {
 			data: {
 				token,
 				userInfo: {
-					openid: openid,
+					openid,
 					nickName: userInfo?.nickName || '匿名用户',
 					avatarUrl: userInfo?.avatarUrl || '',
-					gender: userInfo?.gender || 0,
-					token: token,
+					gender: userInfo?.gender || 0
 				}
 			}
 		}

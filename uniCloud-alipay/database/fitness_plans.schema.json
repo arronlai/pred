@@ -1,6 +1,6 @@
 {
 	"bsonType": "object",
-	"required": ["userId", "userInfo", "workoutPlan", "nutritionAdvice", "recoveryTips", "createdAt", "status"],
+	"required": ["openid", "userInfo", "workoutPlan", "nutritionAdvice", "recoveryTips", "createdAt", "status"],
 	"permission": {
 		"read": true,
 		"create": true,
@@ -11,9 +11,9 @@
 		"_id": {
 			"description": "ID，系统自动生成"
 		},
-		"userId": {
+		"openid": {
 			"bsonType": "string",
-			"description": "用户ID"
+			"description": "用户openid"
 		},
 		"userInfo": {
 			"bsonType": "object",
@@ -66,16 +66,129 @@
 			}
 		},
 		"workoutPlan": {
-			"bsonType": "string",
-			"description": "训练计划"
+			"bsonType": "object",
+			"description": "训练计划",
+			"required": ["weeklyPlan"],
+			"properties": {
+				"weeklyPlan": {
+					"bsonType": "array",
+					"description": "每周训练计划",
+					"items": {
+						"bsonType": "object",
+						"required": ["day", "focus", "exercises", "duration", "notes"],
+						"properties": {
+							"day": {
+								"bsonType": "string",
+								"description": "训练日"
+							},
+							"focus": {
+								"bsonType": "string",
+								"description": "训练重点"
+							},
+							"exercises": {
+								"bsonType": "array",
+								"description": "训练动作",
+								"items": {
+									"bsonType": "object",
+									"required": ["name", "sets", "reps", "restTime", "targetMuscle", "notes"],
+									"properties": {
+										"name": {
+											"bsonType": "string",
+											"description": "动作名称"
+										},
+										"sets": {
+											"bsonType": "number",
+											"description": "组数"
+										},
+										"reps": {
+											"bsonType": "string",
+											"description": "次数"
+										},
+										"restTime": {
+											"bsonType": "number",
+											"description": "休息时间(秒)"
+										},
+										"targetMuscle": {
+											"bsonType": "string",
+											"description": "目标肌群"
+										},
+										"notes": {
+											"bsonType": "string",
+											"description": "动作要领"
+										}
+									}
+								}
+							},
+							"duration": {
+								"bsonType": "string",
+								"description": "训练时长"
+							},
+							"notes": {
+								"bsonType": "string",
+								"description": "注意事项"
+							}
+						}
+					}
+				}
+			}
 		},
 		"nutritionAdvice": {
-			"bsonType": "string",
-			"description": "营养建议"
+			"bsonType": "object",
+			"description": "营养建议",
+			"required": ["dailyCalories", "protein", "carbs", "fats", "dietTips"],
+			"properties": {
+				"dailyCalories": {
+					"bsonType": "string",
+					"description": "每日卡路里"
+				},
+				"protein": {
+					"bsonType": "string",
+					"description": "蛋白质摄入"
+				},
+				"carbs": {
+					"bsonType": "string",
+					"description": "碳水化合物摄入"
+				},
+				"fats": {
+					"bsonType": "string",
+					"description": "脂肪摄入"
+				},
+				"dietTips": {
+					"bsonType": "array",
+					"description": "饮食建议",
+					"items": {
+						"bsonType": "string"
+					}
+				}
+			}
 		},
 		"recoveryTips": {
-			"bsonType": "string",
-			"description": "恢复建议"
+			"bsonType": "object",
+			"description": "恢复建议",
+			"required": ["restSchedule", "stretching", "notes"],
+			"properties": {
+				"restSchedule": {
+					"bsonType": "array",
+					"description": "休息安排",
+					"items": {
+						"bsonType": "string"
+					}
+				},
+				"stretching": {
+					"bsonType": "array",
+					"description": "拉伸动作",
+					"items": {
+						"bsonType": "string"
+					}
+				},
+				"notes": {
+					"bsonType": "array",
+					"description": "注意事项",
+					"items": {
+						"bsonType": "string"
+					}
+				}
+			}
 		},
 		"createdAt": {
 			"bsonType": "timestamp",
@@ -88,11 +201,11 @@
 		},
 		"aiResponse": {
 			"bsonType": "object",
-			"description": "AI接口原始响应",
+			"description": "AI响应原始数据",
 			"properties": {
 				"content": {
 					"bsonType": "string",
-					"description": "AI返回的原始内容"
+					"description": "原始响应内容"
 				},
 				"timestamp": {
 					"bsonType": "timestamp",
