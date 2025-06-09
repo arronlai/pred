@@ -29,31 +29,63 @@
       </view>
     </uni-popup>
 
-    <!-- 历史计划列表 -->
+    <!-- 历史计划弹窗 -->
     <uni-popup ref="historyPopup" type="bottom">
-      <view class="history-list">
+      <view class="history-popup">
         <view class="history-header">
-          <text class="history-title">历史计划</text>
-          <text class="close-btn" @click="closeHistory">×</text>
+          <text class="history-title">历史训练计划</text>
+          <text class="history-close" @click="closeHistoryPopup">×</text>
         </view>
-        <scroll-view class="history-content" scroll-y>
-          <view v-if="historyPlans.length === 0" class="empty-tip">
+        <scroll-view
+          class="history-content"
+          scroll-y
+          @scrolltolower="loadMoreHistory"
+          :style="{ height: '60vh' }"
+        >
+          <view v-if="historyPlans.length === 0" class="no-data">
             <text>暂无历史计划</text>
           </view>
-          <view
-            v-else
-            class="plan-item"
-            v-for="plan in historyPlans"
-            :key="plan._id"
-            @click="viewPlan(plan._id)"
-          >
-            <view class="plan-info">
-              <text class="plan-date">{{ formatDate(plan.createdAt) }}</text>
-              <text class="plan-goal">{{
-                getGoalText(plan.userInfo.fitnessGoal)
-              }}</text>
+          <view v-else class="plan-list">
+            <view
+              v-for="plan in historyPlans"
+              :key="plan.id"
+              class="plan-item"
+              @click="viewPlanDetail(plan)"
+            >
+              <view class="plan-header">
+                <text class="plan-date">{{ formatDate(plan.createdAt) }}</text>
+                <text class="plan-status" :class="plan.status">{{
+                  plan.status === 'active' ? '进行中' : '已归档'
+                }}</text>
+              </view>
+              <view class="plan-info">
+                <view class="info-item">
+                  <text class="label">目标：</text>
+                  <text class="value">{{
+                    plan.userInfo.fitnessGoal || '-'
+                  }}</text>
+                </view>
+                <view class="info-item">
+                  <text class="label">训练方式：</text>
+                  <text class="value">{{
+                    getVenueText(plan.userInfo.venue)
+                  }}</text>
+                </view>
+                <view class="info-item">
+                  <text class="label">周期：</text>
+                  <text class="value">{{ plan.userInfo.planDuration }}</text>
+                </view>
+              </view>
             </view>
-            <text class="arrow">></text>
+          </view>
+          <view v-if="loadingHistory" class="loading">
+            <text>加载中...</text>
+          </view>
+          <view
+            v-if="!hasMoreHistory && historyPlans.length > 0"
+            class="no-more"
+          >
+            <text>没有更多了</text>
           </view>
         </scroll-view>
       </view>
@@ -340,11 +372,13 @@ export default {
         { label: '半年', value: 'half_year' },
       ],
       weeklyDaysOptions: [
+        { label: '1天', value: 1 },
         { label: '2天', value: 2 },
         { label: '3天', value: 3 },
         { label: '4天', value: 4 },
         { label: '5天', value: 5 },
         { label: '6天', value: 6 },
+        { label: '7天', value: 7 },
       ],
       dailyDurationOptions: [
         { label: '30分钟', value: 30 },
@@ -358,6 +392,11 @@ export default {
       loadingDots: '',
       userInfo: {},
       historyPlans: [],
+      historyPage: 1,
+      historyPageSize: 10,
+      historyTotal: 0,
+      hasMoreHistory: true,
+      loadingHistory: false,
     };
   },
   onLoad() {
@@ -527,23 +566,44 @@ export default {
 
     async viewHistoryPlans() {
       try {
-        const result = await uniCloud.callFunction(
-          {
-            name: 'getHistoryPlans',
-            data: {
-              token: uni.getStorageSync('token'),
-            },
-          }
-        );
+        const token = uni.getStorageSync('token');
+        if (!token) {
+          uni.showToast({
+            title: '请先登录',
+            icon: 'none',
+          });
+          return;
+        }
+
+        // 重置分页数据
+        this.historyPage = 1;
+        this.historyPlans = [];
+        this.hasMoreHistory = true;
+
+        const result = await uniCloud.callFunction({
+          name: 'getHistoryPlans',
+          data: {
+            token,
+            page: this.historyPage,
+            pageSize: this.historyPageSize,
+          },
+        });
 
         if (result.result.code === 0) {
-          this.historyPlans = result.result.data;
+          const { plans, total } = result.result.data;
+          this.historyPlans = plans;
+          this.historyTotal = total;
+          this.hasMoreHistory = this.historyPlans.length < total;
+          // 打开弹窗
           this.$refs.historyPopup.open();
         } else {
-          throw new Error(result.result.message);
+          uni.showToast({
+            title: result.result.message || '获取历史计划失败',
+            icon: 'none',
+          });
         }
       } catch (error) {
-        console.error('获取历史计划失败：', error);
+        console.error('获取历史计划失败:', error);
         uni.showToast({
           title: '获取历史计划失败',
           icon: 'none',
@@ -551,14 +611,20 @@ export default {
       }
     },
 
-    viewPlan(planId) {
-      uni.navigateTo({
-        url: `/pages/result/result?planId=${planId}`,
-      });
-      this.closeHistory();
+    loadMoreHistory() {
+      if (this.hasMoreHistory && !this.loadingHistory) {
+        this.historyPage++;
+        this.getHistoryPlans();
+      }
     },
 
-    closeHistory() {
+    viewPlanDetail(plan) {
+      uni.navigateTo({
+        url: `/pages/result/result?planId=${plan.id}`,
+      });
+    },
+
+    closeHistoryPopup() {
       this.$refs.historyPopup.close();
     },
 
@@ -581,23 +647,22 @@ export default {
       });
     },
 
-    formatDate(date) {
-      const d = new Date(date);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+    formatDate(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
         2,
         '0'
-      )}-${String(d.getDate()).padStart(2, '0')}`;
+      )}-${String(date.getDate()).padStart(2, '0')}`;
     },
 
-    getGoalText(goal) {
-      const goalMap = {
-        weight_loss: '减脂',
-        muscle_gain: '增肌',
-        health: '保持健康',
-        strength: '提高力量',
-        posture: '改善体态',
+    getVenueText(venue) {
+      const venueMap = {
+        gym: '健身房',
+        home: '居家',
+        bodyweight: '徒手',
       };
-      return goalMap[goal] || goal;
+      return venueMap[venue] || venue;
     },
   },
 };
@@ -950,69 +1015,99 @@ export default {
   }
 }
 
-.history-list {
-  background-color: #ffffff;
-  border-radius: 24rpx 24rpx 0 0;
-  height: 800rpx;
+.history-popup {
+  background-color: #fff;
+  border-radius: 20rpx 20rpx 0 0;
+  padding: 30rpx;
+}
 
-  .history-header {
-    padding: 32rpx;
-    border-bottom: 2rpx solid #f0f0f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
 
-    .history-title {
-      font-size: 36rpx;
-      font-weight: bold;
-      color: #333333;
-    }
+.history-title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
 
-    .close-btn {
-      font-size: 48rpx;
-      color: #999999;
-      padding: 0 16rpx;
-    }
-  }
+.history-close {
+  font-size: 40rpx;
+  color: #999;
+  padding: 10rpx;
+}
 
-  .history-content {
-    height: calc(100% - 100rpx);
-    padding: 0 32rpx;
+.plan-list {
+  padding: 20rpx 0;
+}
 
-    .empty-tip {
-      text-align: center;
-      padding: 100rpx 0;
-      color: #999999;
-      font-size: 28rpx;
-    }
+.plan-item {
+  background: #f8f8f8;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
 
-    .plan-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 32rpx 0;
-      border-bottom: 2rpx solid #f0f0f0;
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
 
-      .plan-info {
-        .plan-date {
-          font-size: 28rpx;
-          color: #666666;
-          margin-bottom: 8rpx;
-          display: block;
-        }
+.plan-date {
+  font-size: 28rpx;
+  color: #666;
+}
 
-        .plan-goal {
-          font-size: 32rpx;
-          color: #333333;
-          font-weight: bold;
-        }
-      }
+.plan-status {
+  font-size: 24rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+}
 
-      .arrow {
-        font-size: 36rpx;
-        color: #999999;
-      }
-    }
-  }
+.plan-status.active {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.plan-status.archived {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.plan-info {
+  font-size: 26rpx;
+}
+
+.info-item {
+  display: flex;
+  margin-bottom: 8rpx;
+}
+
+.info-item .label {
+  color: #666;
+  width: 140rpx;
+}
+
+.info-item .value {
+  color: #333;
+  flex: 1;
+}
+
+.loading,
+.no-more {
+  text-align: center;
+  padding: 20rpx;
+  color: #999;
+  font-size: 24rpx;
+}
+
+.no-data {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
 }
 </style>

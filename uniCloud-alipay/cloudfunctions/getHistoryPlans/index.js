@@ -65,18 +65,40 @@ exports.main = async (event, context) => {
         const total = countResult.total || 0;
         console.log('符合条件的记录总数:', total);
         
-        // 查询记录列表
+        // 查询记录列表，只返回基本信息
         const plans = await db.collection('fitness_plans')
             .where(where)
+            .field({
+                _id: true,
+                createdAt: true,
+                userInfo: true,
+                status: true
+            })
             .orderBy('createdAt', 'desc')
             .skip((page - 1) * pageSize)
             .limit(pageSize)
             .get();
             
+        // 格式化返回数据
+        const formattedPlans = plans.data.map(plan => ({
+            id: plan._id,
+            createdAt: plan.createdAt,
+            userInfo: {
+                height: plan.userInfo.height,
+                weight: plan.userInfo.weight,
+                age: plan.userInfo.age,
+                gender: plan.userInfo.gender,
+                fitnessGoal: plan.userInfo.fitnessGoal,
+                venue: plan.userInfo.venue,
+                planDuration: plan.userInfo.planDuration
+            },
+            status: plan.status
+        }));
+            
         return {
             code: 0,
             data: {
-                plans: plans.data,
+                plans: formattedPlans,
                 total,
                 page,
                 pageSize
