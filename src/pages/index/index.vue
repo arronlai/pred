@@ -73,7 +73,9 @@
                 </view>
                 <view class="info-item">
                   <text class="label">周期：</text>
-                  <text class="value">{{ plan.userInfo.planDuration }}</text>
+                  <text class="value">{{
+                    getDurationText(plan.userInfo.planDuration)
+                  }}</text>
                 </view>
               </view>
             </view>
@@ -192,7 +194,7 @@
       <!-- 第三步：健身目标与器械 -->
       <view class="step-content" v-if="currentStep === 2">
         <view class="form-group">
-          <text class="label required">健身目标</text>
+          <text class="label">健身目标</text>
           <radio-group @change="handleGoalChange" class="radio-group">
             <label
               v-for="(goal, index) in fitnessGoals"
@@ -229,45 +231,39 @@
 
         <view class="form-group">
           <text class="label required">每周训练天数</text>
-          <radio-group @change="handleWeeklyDaysChange" class="radio-group">
-            <label
-              v-for="(option, index) in weeklyDaysOptions"
-              :key="index"
-              class="radio-item"
-            >
-              <radio
-                :value="option.value"
-                :checked="formData.weeklyDays === option.value"
-                color="#007AFF"
-              />
-              <text>{{ option.label }}</text>
-            </label>
-          </radio-group>
+          <view class="slider-container">
+            <slider
+              style="width: 100%; margin: 0"
+              :value="formData.weeklyDays"
+              :min="1"
+              :max="7"
+              :step="1"
+              show-value
+              @change="handleWeeklyDaysChange"
+            />
+          </view>
         </view>
 
         <view class="form-group">
-          <text class="label required">每天训练时长</text>
-          <radio-group @change="handleDailyDurationChange" class="radio-group">
-            <label
-              v-for="(option, index) in dailyDurationOptions"
-              :key="index"
-              class="radio-item"
-            >
-              <radio
-                :value="option.value"
-                :checked="formData.dailyDuration === option.value"
-                color="#007AFF"
-              />
-              <text>{{ option.label }}</text>
-            </label>
-          </radio-group>
+          <text class="label required">每天训练时长（分钟）</text>
+          <view class="slider-container">
+            <slider
+              :value="formData.dailyDuration"
+              style="width: 100%; margin: 0"
+              :min="30"
+              :max="180"
+              :step="5"
+              show-value
+              @change="handleDailyDurationChange"
+            />
+          </view>
         </view>
 
         <view class="form-group">
-          <text class="label required">计划时长</text>
+          <text class="label">计划时长</text>
           <radio-group @change="handleDurationChange" class="radio-group">
             <label
-              v-for="(duration, index) in planDurations"
+              v-for="(duration, index) in durations"
               :key="index"
               class="radio-item"
             >
@@ -371,22 +367,6 @@ export default {
         { label: '三个月', value: 'quarter' },
         { label: '半年', value: 'half_year' },
       ],
-      weeklyDaysOptions: [
-        { label: '1天', value: 1 },
-        { label: '2天', value: 2 },
-        { label: '3天', value: 3 },
-        { label: '4天', value: 4 },
-        { label: '5天', value: 5 },
-        { label: '6天', value: 6 },
-        { label: '7天', value: 7 },
-      ],
-      dailyDurationOptions: [
-        { label: '30分钟', value: 30 },
-        { label: '45分钟', value: 45 },
-        { label: '60分钟', value: 60 },
-        { label: '90分钟', value: 90 },
-        { label: '120分钟', value: 120 },
-      ],
       isGenerating: false,
       loadingTimer: null,
       loadingDots: '',
@@ -462,6 +442,29 @@ export default {
     },
     nextStep() {
       if (this.currentStep < this.steps.length - 1) {
+        // 验证必填项
+        if (this.currentStep === 0) {
+          if (
+            !this.formData.height ||
+            !this.formData.weight ||
+            !this.formData.age ||
+            !this.formData.gender
+          ) {
+            uni.showToast({
+              title: '请填写所有必填项',
+              icon: 'none',
+            });
+            return;
+          }
+        } else if (this.currentStep === 2) {
+          if (!this.formData.venue) {
+            uni.showToast({
+              title: '请选择训练场地',
+              icon: 'none',
+            });
+            return;
+          }
+        }
         this.currentStep++;
       }
     },
@@ -472,15 +475,7 @@ export default {
     },
     async generatePlan() {
       // 检查必填信息
-      const requiredFields = [
-        'height',
-        'weight',
-        'age',
-        'gender',
-        'fitnessGoal',
-        'venue',
-        'planDuration',
-      ];
+      const requiredFields = ['height', 'weight', 'age', 'gender', 'venue'];
       const missingFields = requiredFields.filter(
         (field) => !this.formData[field]
       );
@@ -488,16 +483,13 @@ export default {
       if (missingFields.length > 0) {
         uni.showModal({
           title: '提示',
-          content: '部分必填信息未填写，生成的计划可能不够准确，是否继续？',
-          success: (res) => {
-            if (res.confirm) {
-              this.submitPlan();
-            }
-          },
+          content: '请填写所有必填项后再生成计划',
+          showCancel: false,
         });
-      } else {
-        this.submitPlan();
+        return;
       }
+
+      this.submitPlan();
     },
     async submitPlan() {
       try {
@@ -663,6 +655,15 @@ export default {
         bodyweight: '徒手',
       };
       return venueMap[venue] || venue;
+    },
+
+    getDurationText(duration) {
+      const durationMap = {
+        month: '一个月',
+        quarter: '三个月',
+        half_year: '半年',
+      };
+      return durationMap[duration] || duration;
     },
   },
 };
@@ -1109,5 +1110,26 @@ export default {
   text-align: center;
   padding: 100rpx 0;
   color: #999;
+}
+
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 20rpx 0 0 0;
+  background-color: transparent;
+  border-radius: 0;
+}
+
+.slider-container slider {
+  width: 100%;
+}
+
+.slider-value {
+  margin-top: 12rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #333;
+  font-weight: bold;
 }
 </style>
