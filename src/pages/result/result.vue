@@ -385,6 +385,7 @@ export default {
 			background-color: #f8f8f8;
 			padding: 16rpx;
 			border-radius: 12rpx;
+			box-sizing: border-box;
 			
 			.info-label {
 				font-size: 26rpx;
@@ -405,6 +406,7 @@ export default {
 		background-color: #f8f8f8;
 		padding: 24rpx;
 		border-radius: 12rpx;
+		box-sizing: border-box;
 		
 		.goal-text {
 			font-size: 32rpx;
@@ -472,6 +474,7 @@ export default {
 			padding: 24rpx;
 			background-color: #f8f8f8;
 			border-radius: 16rpx;
+			box-sizing: border-box;
 			
 			&:last-child {
 				margin-bottom: 32rpx;
@@ -532,6 +535,7 @@ export default {
 		padding: 24rpx;
 		background-color: #f8f8f8;
 		border-radius: 16rpx;
+		box-sizing: border-box;
 		
 		.duration {
 			font-size: 28rpx;
@@ -581,6 +585,7 @@ export default {
 		padding: 20rpx;
 		border-radius: 12rpx;
 		text-align: center;
+		box-sizing: border-box;
 		
 		.nutrition-label {
 			font-size: 26rpx;
