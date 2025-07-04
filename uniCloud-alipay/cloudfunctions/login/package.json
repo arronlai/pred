@@ -1,7 +1,7 @@
 {
   "name": "login",
   "version": "1.0.0",
-  "description": "数字预测云函数",
+  "description": "登录云函数",
   "main": "index.js",
   "uni_modules": {
     "dependencies": [

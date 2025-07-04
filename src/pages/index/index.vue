@@ -1,10 +1,10 @@
 <template>
   <view class="container">
     <view class="header">
-      <!-- <image class="header-bg" src="/static/images/fitness-bg.jpg" mode="aspectFill"></image> -->
+      <image class="header-bg" src="/static/images/fitness-bg.png" mode="aspectFill"></image>
       <view class="header-content">
-        <text class="title">个性化健身计划</text>
-        <text class="subtitle">根据您的需求定制专属训练方案</text>
+        <text class="title">电子教练</text>
+        <text class="subtitle">您的专属训练方案</text>
       </view>
       <view class="user-info" @click="showUserMenu">
         <image
@@ -704,6 +704,7 @@ export default {
     .subtitle {
       font-size: 32rpx;
       opacity: 0.9;
+      display: block;
     }
   }
 
